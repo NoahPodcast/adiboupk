@@ -16,6 +16,7 @@ enum class Command {
     AUDIT,      // Check for cross-group conflicts
     STATUS,     // Show current state (groups, venvs, hashes)
     CLEAN,      // Remove all venvs
+    UNINSTALL,  // Remove adiboupk binary and optionally project files
     WHICH,      // Show which python would be used for a script
     HELP,       // Show help
     VERSION,    // Show version

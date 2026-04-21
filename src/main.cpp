@@ -538,6 +538,100 @@ static int cmd_clean(const adiboupk::cli::ParsedArgs& args) {
     return 0;
 }
 
+static int cmd_uninstall(const adiboupk::cli::ParsedArgs& args) {
+    // Step 1: Clean project files if we're in a project
+    auto root = resolve_root(args);
+    auto cfg = adiboupk::config::load(root);
+
+    bool has_project = !cfg.groups.empty() || fs::exists(root / adiboupk::config::CONFIG_FILE);
+
+    if (has_project) {
+        std::cout << "Project files found in " << root.string() << std::endl;
+        std::cout << "  - .venvs/ (managed virtual environments)" << std::endl;
+        std::cout << "  - adiboupk.json (config)" << std::endl;
+        std::cout << "  - adiboupk.lock (lock file)" << std::endl;
+        std::cout << std::endl;
+
+        if (!args.force) {
+            std::cout << "Remove project files? [y/N] ";
+            std::cout.flush();
+            std::string answer;
+            std::getline(std::cin, answer);
+            if (!answer.empty() && (answer[0] == 'y' || answer[0] == 'Y')) {
+                // Remove venvs
+                for (const auto& g : cfg.groups) {
+                    auto vdir = adiboupk::venv::venv_dir_for(cfg, g);
+                    adiboupk::venv::destroy(vdir);
+                }
+                std::error_code ec;
+                fs::remove(cfg.venvs_dir, ec);
+                fs::remove(root / adiboupk::config::CONFIG_FILE, ec);
+                fs::remove(root / adiboupk::config::LOCK_FILE, ec);
+                std::cout << "Project files removed." << std::endl;
+            } else {
+                std::cout << "Project files kept." << std::endl;
+            }
+        } else {
+            for (const auto& g : cfg.groups) {
+                auto vdir = adiboupk::venv::venv_dir_for(cfg, g);
+                adiboupk::venv::destroy(vdir);
+            }
+            std::error_code ec;
+            fs::remove(cfg.venvs_dir, ec);
+            fs::remove(root / adiboupk::config::CONFIG_FILE, ec);
+            fs::remove(root / adiboupk::config::LOCK_FILE, ec);
+            std::cout << "Project files removed." << std::endl;
+        }
+        std::cout << std::endl;
+    }
+
+    // Step 2: Remove the binary itself
+    std::error_code ec;
+    auto self_path = fs::read_symlink("/proc/self/exe", ec);
+    if (self_path.empty()) {
+        std::string which_output;
+        adiboupk::platform::run_process("which", {"adiboupk"}, true, &which_output);
+        while (!which_output.empty() && (which_output.back() == '\n' || which_output.back() == '\r'))
+            which_output.pop_back();
+        if (!which_output.empty()) {
+            self_path = which_output;
+        }
+    }
+
+    if (self_path.empty()) {
+        std::cerr << "Could not locate adiboupk binary." << std::endl;
+        return 1;
+    }
+
+    std::cout << "Remove adiboupk binary (" << self_path.string() << ")?" << std::endl;
+
+    if (!args.force) {
+        std::cout << "This cannot be undone. [y/N] ";
+        std::cout.flush();
+        std::string answer;
+        std::getline(std::cin, answer);
+        if (answer.empty() || (answer[0] != 'y' && answer[0] != 'Y')) {
+            std::cout << "Uninstall cancelled." << std::endl;
+            return 0;
+        }
+    }
+
+    // Try direct remove, fall back to sudo
+    int rc = adiboupk::platform::run_process("rm", {self_path.string()});
+    if (rc != 0) {
+        rc = adiboupk::platform::run_process("sudo", {"rm", self_path.string()});
+    }
+
+    if (rc != 0) {
+        std::cerr << "Failed to remove binary. Run manually:" << std::endl;
+        std::cerr << "  sudo rm " << self_path.string() << std::endl;
+        return 1;
+    }
+
+    std::cout << "adiboupk has been uninstalled." << std::endl;
+    return 0;
+}
+
 static int cmd_which(const adiboupk::cli::ParsedArgs& args) {
     if (args.script_path.empty()) {
         std::cerr << "Usage: adiboupk which <script.py>" << std::endl;
@@ -586,8 +680,9 @@ int main(int argc, char* argv[]) {
         case adiboupk::cli::Command::RUN:     return cmd_run(args);
         case adiboupk::cli::Command::AUDIT:   return cmd_audit(args);
         case adiboupk::cli::Command::STATUS:  return cmd_status(args);
-        case adiboupk::cli::Command::CLEAN:   return cmd_clean(args);
-        case adiboupk::cli::Command::WHICH:   return cmd_which(args);
+        case adiboupk::cli::Command::CLEAN:     return cmd_clean(args);
+        case adiboupk::cli::Command::UNINSTALL: return cmd_uninstall(args);
+        case adiboupk::cli::Command::WHICH:     return cmd_which(args);
         case adiboupk::cli::Command::VERSION:
             adiboupk::cli::print_version();
             return 0;

@@ -14,8 +14,9 @@ static Command parse_command(const std::string& cmd) {
     if (cmd == "run")     return Command::RUN;
     if (cmd == "audit")   return Command::AUDIT;
     if (cmd == "status")  return Command::STATUS;
-    if (cmd == "clean")   return Command::CLEAN;
-    if (cmd == "which")   return Command::WHICH;
+    if (cmd == "clean")     return Command::CLEAN;
+    if (cmd == "uninstall") return Command::UNINSTALL;
+    if (cmd == "which")     return Command::WHICH;
     if (cmd == "help" || cmd == "--help" || cmd == "-h") return Command::HELP;
     if (cmd == "version" || cmd == "--version" || cmd == "-v") return Command::VERSION;
     return Command::UNKNOWN;
@@ -109,6 +110,7 @@ COMMANDS:
     audit             Detect cross-group dependency conflicts
     status            Show groups, venvs, and dependency state
     clean             Remove all managed venvs
+    uninstall         Remove adiboupk binary and project files (.venvs, config, lock)
     which <script>    Show which python binary would be used for a script
     help              Show this help message
     version           Show version
