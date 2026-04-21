@@ -116,6 +116,17 @@ std::vector<Group> scan(const fs::path& project_root) {
         }
     }
 
+    // Check for a requirements.txt at the project root itself
+    fs::path root_req = project_root / "requirements.txt";
+    if (fs::exists(root_req)) {
+        Group root_group;
+        root_group.name = project_root.filename().string();
+        root_group.directory = project_root;
+        root_group.requirements_path = root_req;
+        root_group.requirements_hash = utils::sha256_file(root_req);
+        groups.push_back(std::move(root_group));
+    }
+
     // Sort by name for deterministic output
     std::sort(groups.begin(), groups.end(),
               [](const Group& a, const Group& b) { return a.name < b.name; });
