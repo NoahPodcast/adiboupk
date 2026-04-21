@@ -40,7 +40,13 @@ bool destroy(const fs::path& venv_dir) {
 }
 
 fs::path venv_dir_for(const Config& cfg, const Group& group) {
-    return cfg.venvs_dir / group.name;
+    // Replace "/" in subgroup names with "_" for filesystem compatibility
+    // e.g., "Enrichments/vt" -> ".venvs/Enrichments_vt"
+    std::string safe_name = group.name;
+    for (auto& c : safe_name) {
+        if (c == '/') c = '_';
+    }
+    return cfg.venvs_dir / safe_name;
 }
 
 } // namespace venv

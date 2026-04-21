@@ -19,6 +19,15 @@ static bool should_ignore(const fs::path& dir_name) {
     return IGNORED_DIRS.count(name) > 0;
 }
 
+// Extract subgroup name from "requirements-foo.txt" -> "foo"
+static std::string extract_subgroup_name(const std::string& filename) {
+    // "requirements-foo.txt" -> "foo"
+    if (filename.size() <= 17) return {}; // "requirements-.txt" = 17 chars minimum
+    if (filename.substr(0, 13) != "requirements-") return {};
+    if (filename.substr(filename.size() - 4) != ".txt") return {};
+    return filename.substr(13, filename.size() - 17);
+}
+
 std::vector<Group> scan(const fs::path& project_root) {
     std::vector<Group> groups;
     std::error_code ec;
@@ -27,16 +36,84 @@ std::vector<Group> scan(const fs::path& project_root) {
         if (!entry.is_directory()) continue;
         if (should_ignore(entry.path())) continue;
 
-        fs::path req_path = entry.path() / "requirements.txt";
-        if (!fs::exists(req_path)) continue;
+        std::string dir_name = entry.path().filename().string();
+        bool has_default = false;
 
-        Group group;
-        group.name = entry.path().filename().string();
-        group.directory = entry.path();
-        group.requirements_path = req_path;
-        group.requirements_hash = utils::sha256_file(req_path);
+        // Check for requirements-*.txt (subgroups) first
+        std::vector<Group> subgroups;
+        for (auto& file : fs::directory_iterator(entry.path(), ec)) {
+            if (!file.is_regular_file()) continue;
+            std::string fname = file.path().filename().string();
 
-        groups.push_back(std::move(group));
+            if (fname == "requirements.txt") {
+                has_default = true;
+                continue;
+            }
+
+            std::string sub_name = extract_subgroup_name(fname);
+            if (sub_name.empty()) continue;
+
+            Group sg;
+            sg.name = dir_name + "/" + sub_name;
+            sg.directory = entry.path();
+            sg.requirements_path = file.path();
+            sg.requirements_hash = utils::sha256_file(file.path());
+            subgroups.push_back(std::move(sg));
+        }
+
+        if (!subgroups.empty()) {
+            // Auto-map scripts to subgroups by naming convention:
+            // "script_vt.py" or "vt_lookup.py" matches subgroup "vt"
+            // if the filename contains the subgroup suffix
+            for (auto& file : fs::directory_iterator(entry.path(), ec)) {
+                if (!file.is_regular_file()) continue;
+                std::string fname = file.path().filename().string();
+                if (fname.size() < 4 || fname.substr(fname.size() - 3) != ".py") continue;
+
+                for (auto& sg : subgroups) {
+                    // Extract suffix from group name: "Enrichments/vt" -> "vt"
+                    auto slash_pos = sg.name.rfind('/');
+                    if (slash_pos == std::string::npos) continue;
+                    std::string suffix = sg.name.substr(slash_pos + 1);
+
+                    // Match if filename contains the suffix
+                    // e.g., "script_vt.py" contains "vt", "vt_lookup.py" contains "vt"
+                    std::string fname_lower = fname;
+                    std::transform(fname_lower.begin(), fname_lower.end(),
+                                   fname_lower.begin(), ::tolower);
+                    std::string suffix_lower = suffix;
+                    std::transform(suffix_lower.begin(), suffix_lower.end(),
+                                   suffix_lower.begin(), ::tolower);
+
+                    if (fname_lower.find(suffix_lower) != std::string::npos) {
+                        sg.scripts.push_back(fname);
+                        break; // Each script maps to at most one subgroup
+                    }
+                }
+            }
+
+            // Add subgroups
+            for (auto& sg : subgroups) {
+                groups.push_back(std::move(sg));
+            }
+            // Also add the default requirements.txt as a fallback group if it exists
+            if (has_default) {
+                Group fallback;
+                fallback.name = dir_name;
+                fallback.directory = entry.path();
+                fallback.requirements_path = entry.path() / "requirements.txt";
+                fallback.requirements_hash = utils::sha256_file(fallback.requirements_path);
+                groups.push_back(std::move(fallback));
+            }
+        } else if (has_default) {
+            // No subgroups, just the default requirements.txt
+            Group group;
+            group.name = dir_name;
+            group.directory = entry.path();
+            group.requirements_path = entry.path() / "requirements.txt";
+            group.requirements_hash = utils::sha256_file(group.requirements_path);
+            groups.push_back(std::move(group));
+        }
     }
 
     // Sort by name for deterministic output
@@ -49,13 +126,41 @@ std::vector<Group> scan(const fs::path& project_root) {
 const Group* find_group_for_script(const std::vector<Group>& groups,
                                     const fs::path& script_path) {
     auto norm_script = platform::normalize_path(script_path);
+    std::string script_filename = script_path.filename().string();
 
+    // Pass 1: Check explicit script mappings (most specific match)
     for (const auto& group : groups) {
+        if (group.scripts.empty()) continue;
+        auto norm_dir = platform::normalize_path(group.directory);
+        if (!platform::is_under(norm_script, norm_dir)) continue;
+
+        for (const auto& pattern : group.scripts) {
+            if (script_filename == pattern) {
+                return &group;
+            }
+        }
+    }
+
+    // Pass 2: Check subgroups (groups with "/" in name) by directory
+    // These are more specific than plain directory groups
+    for (const auto& group : groups) {
+        if (group.name.find('/') == std::string::npos) continue;
+        if (!group.scripts.empty()) continue; // Already checked in pass 1
         auto norm_dir = platform::normalize_path(group.directory);
         if (platform::is_under(norm_script, norm_dir)) {
             return &group;
         }
     }
+
+    // Pass 3: Fall back to directory-level groups (no "/" in name)
+    for (const auto& group : groups) {
+        if (group.name.find('/') != std::string::npos) continue;
+        auto norm_dir = platform::normalize_path(group.directory);
+        if (platform::is_under(norm_script, norm_dir)) {
+            return &group;
+        }
+    }
+
     return nullptr;
 }
 

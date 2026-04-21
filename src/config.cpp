@@ -46,6 +46,12 @@ Config load(const fs::path& project_root) {
                     group.requirements_path = group.directory / "requirements.txt";
                 }
 
+                if (g.contains("scripts") && g["scripts"].is_array()) {
+                    for (const auto& s : g["scripts"]) {
+                        group.scripts.push_back(s.get<std::string>());
+                    }
+                }
+
                 // Compute hash of current requirements.txt
                 if (fs::exists(group.requirements_path)) {
                     group.requirements_hash = utils::sha256_file(group.requirements_path);
@@ -79,6 +85,10 @@ bool save(const Config& cfg) {
         auto default_req = g.directory / "requirements.txt";
         if (g.requirements_path != default_req) {
             gj["requirements"] = fs::relative(g.requirements_path, cfg.project_root).string();
+        }
+
+        if (!g.scripts.empty()) {
+            gj["scripts"] = g.scripts;
         }
 
         groups_arr.push_back(gj);

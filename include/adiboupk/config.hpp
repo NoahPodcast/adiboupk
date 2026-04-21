@@ -11,10 +11,13 @@ namespace fs = std::filesystem;
 
 // A group of modules that share a venv
 struct Group {
-    std::string name;                    // e.g., "Enrichments"
+    std::string name;                    // e.g., "Enrichments" or "Enrichments/vt"
     fs::path directory;                  // e.g., "./Enrichments"
     fs::path requirements_path;          // e.g., "./Enrichments/requirements.txt"
     std::string requirements_hash;       // SHA-256 of requirements.txt content
+    std::vector<std::string> scripts;    // Explicit script mappings (optional)
+                                         // e.g., ["script_vt.py", "script_vt2.py"]
+                                         // If empty, all scripts in directory use this group
 };
 
 // Project configuration (adiboupk.json)
