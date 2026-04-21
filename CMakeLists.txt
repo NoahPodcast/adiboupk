@@ -5,6 +5,31 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# --- Version from git tag ---
+# Uses git describe to get version like "v1.2.0" or "v1.2.0-3-gabcdef".
+# Falls back to project(VERSION) if git is unavailable or no tags exist.
+find_package(Git QUIET)
+if(GIT_FOUND)
+    execute_process(
+        COMMAND ${GIT_EXECUTABLE} describe --tags --always
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_VARIABLE GIT_VERSION
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+        RESULT_VARIABLE GIT_RESULT
+    )
+    if(GIT_RESULT EQUAL 0 AND GIT_VERSION MATCHES "^v?[0-9]")
+        # Strip leading 'v' if present
+        string(REGEX REPLACE "^v" "" GIT_VERSION "${GIT_VERSION}")
+        set(ADIBOUPK_VERSION "${GIT_VERSION}")
+    else()
+        set(ADIBOUPK_VERSION "${PROJECT_VERSION}")
+    endif()
+else()
+    set(ADIBOUPK_VERSION "${PROJECT_VERSION}")
+endif()
+message(STATUS "adiboupk version: ${ADIBOUPK_VERSION}")
+
 # Sources
 set(SOURCES
     src/main.cpp
@@ -32,6 +57,7 @@ target_include_directories(adiboupk PRIVATE
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/third_party
 )
+target_compile_definitions(adiboupk PRIVATE ADIBOUPK_VERSION="${ADIBOUPK_VERSION}")
 
 # Static linking for portable binary
 if(WIN32)
@@ -68,6 +94,7 @@ target_include_directories(adiboupk_lib PUBLIC
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/third_party
 )
+target_compile_definitions(adiboupk_lib PUBLIC ADIBOUPK_VERSION="${ADIBOUPK_VERSION}")
 
 # Tests
 option(BUILD_TESTS "Build tests" ON)

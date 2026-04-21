@@ -121,7 +121,11 @@ EXAMPLES:
 }
 
 void print_version() {
-    std::cout << "adiboupk 1.0.0" << std::endl;
+#ifdef ADIBOUPK_VERSION
+    std::cout << "adiboupk " << ADIBOUPK_VERSION << std::endl;
+#else
+    std::cout << "adiboupk (unknown version)" << std::endl;
+#endif
 }
 
 } // namespace cli

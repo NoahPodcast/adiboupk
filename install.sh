@@ -65,11 +65,12 @@ info "Installing to $INSTALL_DIR..."
 if [ -w "$INSTALL_DIR" ] || [ -w "$(dirname "$INSTALL_DIR")" ]; then
     mkdir -p "$INSTALL_DIR"
     cp build/adiboupk "$INSTALL_DIR/adiboupk"
+    chmod +x "$INSTALL_DIR/adiboupk"
 else
     sudo mkdir -p "$INSTALL_DIR"
     sudo cp build/adiboupk "$INSTALL_DIR/adiboupk"
+    sudo chmod +x "$INSTALL_DIR/adiboupk"
 fi
-chmod +x "$INSTALL_DIR/adiboupk"
 
 # --- Cleanup ---
 if [ "$CLONED" = true ]; then
