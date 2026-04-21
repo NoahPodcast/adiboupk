@@ -8,6 +8,7 @@ namespace cli {
 static Command parse_command(const std::string& cmd) {
     if (cmd == "init")    return Command::INIT;
     if (cmd == "install") return Command::INSTALL;
+    if (cmd == "setup")   return Command::SETUP;
     if (cmd == "run")     return Command::RUN;
     if (cmd == "audit")   return Command::AUDIT;
     if (cmd == "status")  return Command::STATUS;
@@ -69,6 +70,7 @@ ParsedArgs parse(int argc, char* argv[]) {
             break;
 
         case Command::INSTALL:
+        case Command::SETUP:
             // Parse remaining flags
             while (i < argc) {
                 std::string arg = argv[i];
@@ -94,6 +96,7 @@ USAGE:
     adiboupk <command> [options] [args]
 
 COMMANDS:
+    setup             All-in-one: scan, create venvs, install deps, audit
     init              Scan project and create adiboupk.json config
     install           Create venvs and install dependencies for all groups
     run <script>      Run a Python script using the correct group's venv
@@ -110,8 +113,7 @@ OPTIONS:
     --verbose         Show detailed output
 
 EXAMPLES:
-    adiboupk init
-    adiboupk install
+    adiboupk setup
     adiboupk run ./Enrichments/cortex_lookup.py hostname123
     adiboupk audit
     adiboupk which ./Responses/send_email.py

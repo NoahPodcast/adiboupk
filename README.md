@@ -25,23 +25,18 @@ project/
 cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 
-# Initialize (scans for directories with requirements.txt)
-./build/adiboupk init
-
-# Install dependencies into isolated venvs
-./build/adiboupk install
+# One command to scan, create venvs, install deps, and audit
+./build/adiboupk setup
 
 # Run a script — adiboupk picks the right venv automatically
 ./build/adiboupk run ./Enrichments/cortex_lookup.py hostname123
-
-# Check for cross-group version conflicts
-./build/adiboupk audit
 ```
 
 ## Commands
 
 | Command | Description |
 |---|---|
+| `setup` | All-in-one: scan, create venvs, install deps, audit |
 | `init` | Scan project root and generate `adiboupk.json` |
 | `install` | Create venvs and install dependencies for each group |
 | `run <script> [args]` | Execute a script using its group's venv |

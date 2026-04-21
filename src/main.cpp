@@ -77,6 +77,64 @@ static int cmd_install(const adiboupk::cli::ParsedArgs& args) {
     return 0;
 }
 
+static int cmd_setup(const adiboupk::cli::ParsedArgs& args) {
+    auto root = resolve_root(args);
+
+    // Step 1: Init — scan and create config
+    std::cout << "==> Scanning " << root.string() << " for module groups..." << std::endl;
+
+    auto groups = adiboupk::discovery::scan(root);
+    if (groups.empty()) {
+        std::cerr << "No directories with requirements.txt found." << std::endl;
+        return 1;
+    }
+
+    std::cout << "Found " << groups.size() << " group(s):" << std::endl;
+    for (const auto& g : groups) {
+        std::cout << "  - " << g.name << " (" << g.requirements_path.string() << ")" << std::endl;
+    }
+
+    auto cfg = adiboupk::config::init(root, groups);
+    if (!adiboupk::config::save(cfg)) {
+        std::cerr << "Failed to write " << adiboupk::config::CONFIG_FILE << std::endl;
+        return 1;
+    }
+    std::cout << "Created " << adiboupk::config::CONFIG_FILE << std::endl;
+    std::cout << std::endl;
+
+    // Step 2: Install — create venvs and install dependencies
+    std::cout << "==> Installing dependencies..." << std::endl;
+
+    // Reload config to pick up computed hashes
+    cfg = adiboupk::config::load(root);
+    auto lock = adiboupk::config::load_lock(root);
+
+    if (args.force) {
+        lock.entries.clear();
+    }
+
+    int failures = adiboupk::installer::install_all(cfg, lock);
+
+    if (!adiboupk::config::save_lock(lock, root)) {
+        std::cerr << "Warning: failed to write lock file" << std::endl;
+    }
+
+    if (failures > 0) {
+        std::cerr << failures << " group(s) failed to install." << std::endl;
+        return 1;
+    }
+    std::cout << std::endl;
+
+    // Step 3: Audit — check for conflicts
+    std::cout << "==> Auditing for cross-group conflicts..." << std::endl;
+
+    auto conflicts = adiboupk::auditor::audit(cfg.groups);
+    std::cout << adiboupk::auditor::format_conflicts(conflicts);
+
+    std::cout << "Setup complete. Use 'adiboupk run <script.py>' to execute scripts." << std::endl;
+    return 0;
+}
+
 static int cmd_run(const adiboupk::cli::ParsedArgs& args) {
     if (args.script_path.empty()) {
         std::cerr << "Usage: adiboupk run <script.py> [args...]" << std::endl;
@@ -217,6 +275,7 @@ int main(int argc, char* argv[]) {
     switch (args.command) {
         case adiboupk::cli::Command::INIT:    return cmd_init(args);
         case adiboupk::cli::Command::INSTALL: return cmd_install(args);
+        case adiboupk::cli::Command::SETUP:   return cmd_setup(args);
         case adiboupk::cli::Command::RUN:     return cmd_run(args);
         case adiboupk::cli::Command::AUDIT:   return cmd_audit(args);
         case adiboupk::cli::Command::STATUS:  return cmd_status(args);
