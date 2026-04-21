@@ -42,6 +42,7 @@ set(SOURCES
     src/runner.cpp
     src/platform_common.cpp
     src/utils.cpp
+    src/isolator.cpp
 )
 
 # Platform-specific sources
@@ -82,6 +83,7 @@ set(LIB_SOURCES
     src/runner.cpp
     src/platform_common.cpp
     src/utils.cpp
+    src/isolator.cpp
 )
 if(WIN32)
     list(APPEND LIB_SOURCES src/platform_windows.cpp)

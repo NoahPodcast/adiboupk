@@ -26,6 +26,7 @@ struct Config {
     fs::path venvs_dir;                  // Where venvs are stored (default: .venvs)
     std::vector<Group> groups;           // Defined groups
     std::string python_path;             // Custom python path (optional)
+    bool isolate_packages = false;       // Per-package isolation mode
 };
 
 // Lock file state (adiboupk.lock)

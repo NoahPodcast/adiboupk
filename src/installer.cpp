@@ -1,4 +1,5 @@
 #include "adiboupk/installer.hpp"
+#include "adiboupk/isolator.hpp"
 #include "adiboupk/platform.hpp"
 #include "adiboupk/venv.hpp"
 
@@ -58,7 +59,7 @@ int install_all(Config& cfg, LockFile& lock) {
 
         auto vdir = venv::venv_dir_for(cfg, group);
 
-        // Create venv if it doesn't exist
+        // Create venv if it doesn't exist (needed in both modes for the Python interpreter)
         if (!venv::exists(vdir)) {
             std::cout << "    Creating venv..." << std::endl;
             if (!venv::create(vdir, python_cmd)) {
@@ -68,25 +69,35 @@ int install_all(Config& cfg, LockFile& lock) {
             }
         }
 
-        // Install dependencies
-        std::cout << "    Installing dependencies..." << std::endl;
-        if (!install(vdir, group.requirements_path)) {
-            std::cerr << "    Failed to install dependencies for " << group.name << std::endl;
-            failures++;
-            continue;
-        }
+        if (cfg.isolate_packages) {
+            // Per-package isolation: each package gets its own --target directory
+            auto deps_dir = isolator::deps_dir_for(cfg, group);
+            std::cout << "    Installing packages in isolated mode..." << std::endl;
+            if (!isolator::install_isolated(deps_dir, group.requirements_path, python_cmd)) {
+                std::cerr << "    Failed to install isolated packages for " << group.name << std::endl;
+                failures++;
+                continue;
+            }
+        } else {
+            // Standard mode: install all packages into the venv
+            std::cout << "    Installing dependencies..." << std::endl;
+            if (!install(vdir, group.requirements_path)) {
+                std::cerr << "    Failed to install dependencies for " << group.name << std::endl;
+                failures++;
+                continue;
+            }
 
-        // Check for transitive dependency conflicts
-        std::string check_output = pip_check(vdir);
-        if (!check_output.empty() &&
-            check_output.find("No broken requirements found") == std::string::npos) {
-            std::cout << "    Warning: dependency conflicts detected:" << std::endl;
-            // Indent each line
-            std::istringstream stream(check_output);
-            std::string line;
-            while (std::getline(stream, line)) {
-                if (!line.empty()) {
-                    std::cout << "      " << line << std::endl;
+            // Check for transitive dependency conflicts
+            std::string check_output = pip_check(vdir);
+            if (!check_output.empty() &&
+                check_output.find("No broken requirements found") == std::string::npos) {
+                std::cout << "    Warning: dependency conflicts detected:" << std::endl;
+                std::istringstream stream(check_output);
+                std::string line;
+                while (std::getline(stream, line)) {
+                    if (!line.empty()) {
+                        std::cout << "      " << line << std::endl;
+                    }
                 }
             }
         }

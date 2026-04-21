@@ -34,6 +34,10 @@ Config load(const fs::path& project_root) {
             cfg.python_path = j["python"].get<std::string>();
         }
 
+        if (j.contains("isolate_packages")) {
+            cfg.isolate_packages = j["isolate_packages"].get<bool>();
+        }
+
         if (j.contains("groups") && j["groups"].is_array()) {
             for (const auto& g : j["groups"]) {
                 Group group;
@@ -74,6 +78,10 @@ bool save(const Config& cfg) {
 
     if (!cfg.python_path.empty()) {
         j["python"] = cfg.python_path;
+    }
+
+    if (cfg.isolate_packages) {
+        j["isolate_packages"] = true;
     }
 
     json groups_arr = json::array();

@@ -1,0 +1,11 @@
+{
+  "venvs_dir": ".venvs",
+  "isolate_packages": true,
+  "groups": [
+    {
+      "name": "conflict_test",
+      "directory": ".",
+      "requirements": "requirements.txt"
+    }
+  ]
+}
