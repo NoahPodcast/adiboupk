@@ -7,8 +7,11 @@
 #include "adiboupk/runner.hpp"
 #include "adiboupk/venv.hpp"
 
+#include "nlohmann/json.hpp"
+
 #include <filesystem>
 #include <iostream>
+#include <set>
 
 namespace fs = std::filesystem;
 
@@ -132,6 +135,260 @@ static int cmd_setup(const adiboupk::cli::ParsedArgs& args) {
     std::cout << adiboupk::auditor::format_conflicts(conflicts);
 
     std::cout << "Setup complete. Use 'adiboupk run <script.py>' to execute scripts." << std::endl;
+    return 0;
+}
+
+static int cmd_update(const adiboupk::cli::ParsedArgs& args) {
+    auto root = resolve_root(args);
+
+    // Step 1: Re-scan for new/removed groups
+    std::cout << "==> Scanning for group changes..." << std::endl;
+
+    auto discovered = adiboupk::discovery::scan(root);
+    auto cfg = adiboupk::config::load(root);
+    auto lock = adiboupk::config::load_lock(root);
+
+    // Detect added/removed groups
+    std::set<std::string> old_names, new_names;
+    for (const auto& g : cfg.groups) old_names.insert(g.name);
+    for (const auto& g : discovered) new_names.insert(g.name);
+
+    for (const auto& name : new_names) {
+        if (old_names.find(name) == old_names.end()) {
+            std::cout << "  [new] " << name << std::endl;
+        }
+    }
+    for (const auto& name : old_names) {
+        if (new_names.find(name) == new_names.end()) {
+            std::cout << "  [removed] " << name << std::endl;
+            // Destroy orphaned venv
+            auto vdir = cfg.venvs_dir / name;
+            if (adiboupk::venv::destroy(vdir)) {
+                std::cout << "    Removed orphaned venv" << std::endl;
+            }
+            lock.entries.erase(name);
+        }
+    }
+
+    // Update config with discovered groups
+    cfg.groups = discovered;
+    if (!adiboupk::config::save(cfg)) {
+        std::cerr << "Failed to write " << adiboupk::config::CONFIG_FILE << std::endl;
+        return 1;
+    }
+
+    // Reload to get fresh hashes
+    cfg = adiboupk::config::load(root);
+
+    // Step 2: Reinstall changed groups
+    std::cout << "==> Checking dependencies..." << std::endl;
+
+    if (args.force) {
+        lock.entries.clear();
+    }
+
+    int failures = adiboupk::installer::install_all(cfg, lock);
+
+    if (!adiboupk::config::save_lock(lock, root)) {
+        std::cerr << "Warning: failed to write lock file" << std::endl;
+    }
+
+    if (failures > 0) {
+        std::cerr << failures << " group(s) failed to install." << std::endl;
+        return 1;
+    }
+
+    std::cout << "Update complete." << std::endl;
+    return 0;
+}
+
+static int cmd_upgrade(const adiboupk::cli::ParsedArgs& args) {
+    (void)args; // project_root not relevant for self-upgrade
+
+    std::cout << "==> Checking for updates..." << std::endl;
+
+    // Get current version
+    std::string current_version;
+#ifdef ADIBOUPK_VERSION
+    current_version = ADIBOUPK_VERSION;
+#else
+    current_version = "unknown";
+#endif
+    std::cout << "Current version: " << current_version << std::endl;
+
+    // Fetch latest version from GitHub API
+    std::string api_output;
+    int rc = adiboupk::platform::run_process(
+        "curl",
+        {"-sSL", "-H", "Accept: application/vnd.github.v3+json",
+         "https://api.github.com/repos/NoahPodcast/adiboupk/tags?per_page=1"},
+        true, &api_output
+    );
+
+    if (rc != 0 || api_output.empty()) {
+        std::cerr << "Failed to check for updates (no network or curl unavailable)." << std::endl;
+        std::cerr << "Manual upgrade: curl -sSL https://raw.githubusercontent.com/NoahPodcast/adiboupk/main/install.sh | bash" << std::endl;
+        return 1;
+    }
+
+    // Parse latest tag from JSON response
+    // Response is like: [{"name":"v1.2.0",...}]
+    std::string latest_version;
+    try {
+        auto j = nlohmann::json::parse(api_output);
+        if (j.is_array() && !j.empty() && j[0].contains("name")) {
+            latest_version = j[0]["name"].get<std::string>();
+            // Strip leading 'v'
+            if (!latest_version.empty() && latest_version[0] == 'v') {
+                latest_version = latest_version.substr(1);
+            }
+        }
+    } catch (...) {
+        // Ignore parse errors
+    }
+
+    if (latest_version.empty()) {
+        std::cerr << "Could not determine latest version." << std::endl;
+        std::cerr << "Manual upgrade: curl -sSL https://raw.githubusercontent.com/NoahPodcast/adiboupk/main/install.sh | bash" << std::endl;
+        return 1;
+    }
+
+    std::cout << "Latest version:  " << latest_version << std::endl;
+
+    // Compare versions (simple string compare — works for semver without pre-release)
+    // Strip commit info from current version for comparison (e.g., "1.0.0-3-gabcdef" -> "1.0.0")
+    std::string current_base = current_version;
+    auto dash_pos = current_base.find('-');
+    if (dash_pos != std::string::npos) {
+        current_base = current_base.substr(0, dash_pos);
+    }
+
+    if (current_base == latest_version && dash_pos == std::string::npos) {
+        std::cout << "Already up to date." << std::endl;
+        return 0;
+    }
+
+    std::cout << "==> Upgrading..." << std::endl;
+
+    // Find where the current binary is installed
+    std::error_code ec;
+    auto self_path = fs::read_symlink("/proc/self/exe", ec);
+    if (self_path.empty()) {
+        // Fallback: try which
+        std::string which_output;
+        adiboupk::platform::run_process("which", {"adiboupk"}, true, &which_output);
+        if (!which_output.empty()) {
+            // Trim whitespace
+            while (!which_output.empty() && (which_output.back() == '\n' || which_output.back() == '\r')) {
+                which_output.pop_back();
+            }
+            self_path = which_output;
+        }
+    }
+
+    std::string install_dir;
+    if (!self_path.empty()) {
+        install_dir = self_path.parent_path().string();
+    }
+
+    // Clone, build, replace
+    std::string tmp_dir;
+    std::string tmp_output;
+    adiboupk::platform::run_process("mktemp", {"-d"}, true, &tmp_output);
+    if (!tmp_output.empty()) {
+        while (!tmp_output.empty() && (tmp_output.back() == '\n' || tmp_output.back() == '\r')) {
+            tmp_output.pop_back();
+        }
+        tmp_dir = tmp_output;
+    } else {
+        tmp_dir = "/tmp/adiboupk-upgrade";
+    }
+
+    std::cout << "  Cloning latest version..." << std::endl;
+    rc = adiboupk::platform::run_process(
+        "git", {"clone", "--depth", "1", "--branch", "v" + latest_version,
+                "https://github.com/NoahPodcast/adiboupk.git", tmp_dir}
+    );
+    if (rc != 0) {
+        // Try without tag (main branch)
+        adiboupk::platform::run_process("rm", {"-rf", tmp_dir});
+        adiboupk::platform::run_process("mktemp", {"-d"}, true, &tmp_output);
+        if (!tmp_output.empty()) {
+            while (!tmp_output.empty() && (tmp_output.back() == '\n' || tmp_output.back() == '\r')) {
+                tmp_output.pop_back();
+            }
+            tmp_dir = tmp_output;
+        }
+        rc = adiboupk::platform::run_process(
+            "git", {"clone", "--depth", "1",
+                    "https://github.com/NoahPodcast/adiboupk.git", tmp_dir}
+        );
+        if (rc != 0) {
+            std::cerr << "Failed to clone repository." << std::endl;
+            return 1;
+        }
+    }
+
+    std::cout << "  Building..." << std::endl;
+    rc = adiboupk::platform::run_process(
+        "cmake", {"-B", tmp_dir + "/build", "-S", tmp_dir,
+                  "-DCMAKE_BUILD_TYPE=Release", "-DBUILD_TESTS=OFF"}
+    );
+    if (rc != 0) {
+        std::cerr << "Configure failed." << std::endl;
+        adiboupk::platform::run_process("rm", {"-rf", tmp_dir});
+        return 1;
+    }
+
+    rc = adiboupk::platform::run_process(
+        "cmake", {"--build", tmp_dir + "/build", "--config", "Release"}
+    );
+    if (rc != 0) {
+        std::cerr << "Build failed." << std::endl;
+        adiboupk::platform::run_process("rm", {"-rf", tmp_dir});
+        return 1;
+    }
+
+    std::cout << "  Installing..." << std::endl;
+    std::string new_binary = tmp_dir + "/build/adiboupk";
+
+    if (install_dir.empty()) {
+        install_dir = "/usr/local/bin";
+    }
+
+    std::string dest = install_dir + "/adiboupk";
+    std::string dest_tmp = dest + ".new";
+
+    // Use copy-to-temp + rename to handle "Text file busy" when replacing a running binary
+    auto try_install = [&](bool use_sudo) -> bool {
+        std::vector<std::string> cp_args = {new_binary, dest_tmp};
+        std::vector<std::string> mv_args = {dest_tmp, dest};
+        std::vector<std::string> chmod_args = {"+x", dest};
+
+        if (use_sudo) {
+            cp_args.insert(cp_args.begin(), "cp");
+            mv_args.insert(mv_args.begin(), "mv");
+            chmod_args.insert(chmod_args.begin(), "chmod");
+            return adiboupk::platform::run_process("sudo", cp_args) == 0
+                && adiboupk::platform::run_process("sudo", mv_args) == 0
+                && adiboupk::platform::run_process("sudo", chmod_args) == 0;
+        } else {
+            return adiboupk::platform::run_process("cp", cp_args) == 0
+                && adiboupk::platform::run_process("mv", mv_args) == 0
+                && adiboupk::platform::run_process("chmod", chmod_args) == 0;
+        }
+    };
+
+    if (!try_install(false) && !try_install(true)) {
+        std::cerr << "Failed to install new binary to " << dest << std::endl;
+        adiboupk::platform::run_process("rm", {"-rf", tmp_dir});
+        return 1;
+    }
+
+    // Cleanup
+    adiboupk::platform::run_process("rm", {"-rf", tmp_dir});
+
+    std::cout << "==> Upgraded to " << latest_version << std::endl;
     return 0;
 }
 
@@ -276,6 +533,8 @@ int main(int argc, char* argv[]) {
         case adiboupk::cli::Command::INIT:    return cmd_init(args);
         case adiboupk::cli::Command::INSTALL: return cmd_install(args);
         case adiboupk::cli::Command::SETUP:   return cmd_setup(args);
+        case adiboupk::cli::Command::UPDATE:  return cmd_update(args);
+        case adiboupk::cli::Command::UPGRADE: return cmd_upgrade(args);
         case adiboupk::cli::Command::RUN:     return cmd_run(args);
         case adiboupk::cli::Command::AUDIT:   return cmd_audit(args);
         case adiboupk::cli::Command::STATUS:  return cmd_status(args);

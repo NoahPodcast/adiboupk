@@ -9,6 +9,8 @@ static Command parse_command(const std::string& cmd) {
     if (cmd == "init")    return Command::INIT;
     if (cmd == "install") return Command::INSTALL;
     if (cmd == "setup")   return Command::SETUP;
+    if (cmd == "update")  return Command::UPDATE;
+    if (cmd == "upgrade") return Command::UPGRADE;
     if (cmd == "run")     return Command::RUN;
     if (cmd == "audit")   return Command::AUDIT;
     if (cmd == "status")  return Command::STATUS;
@@ -71,6 +73,8 @@ ParsedArgs parse(int argc, char* argv[]) {
 
         case Command::INSTALL:
         case Command::SETUP:
+        case Command::UPDATE:
+        case Command::UPGRADE:
             // Parse remaining flags
             while (i < argc) {
                 std::string arg = argv[i];
@@ -97,6 +101,8 @@ USAGE:
 
 COMMANDS:
     setup             All-in-one: scan, create venvs, install deps, audit
+    update            Re-scan groups and reinstall changed dependencies
+    upgrade           Update adiboupk itself to the latest version
     init              Scan project and create adiboupk.json config
     install           Create venvs and install dependencies for all groups
     run <script>      Run a Python script using the correct group's venv

@@ -10,6 +10,8 @@ enum class Command {
     INIT,       // Initialize config by scanning for groups
     INSTALL,    // Create venvs and install dependencies
     SETUP,      // All-in-one: init + install + audit
+    UPDATE,     // Re-scan groups + reinstall changed dependencies
+    UPGRADE,    // Self-update the adiboupk binary
     RUN,        // Run a script in the correct venv
     AUDIT,      // Check for cross-group conflicts
     STATUS,     // Show current state (groups, venvs, hashes)

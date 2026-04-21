@@ -59,6 +59,8 @@ adiboupk run ./Enrichments/cortex_lookup.py hostname123
 | Command | Description |
 |---|---|
 | `setup` | All-in-one: scan, create venvs, install deps, audit |
+| `update` | Re-scan groups, install changed deps, clean orphaned venvs |
+| `upgrade` | Update the adiboupk binary itself to the latest version |
 | `init` | Scan project root and generate `adiboupk.json` |
 | `install` | Create venvs and install dependencies for each group |
 | `run <script> [args]` | Execute a script using its group's venv |
@@ -66,6 +68,11 @@ adiboupk run ./Enrichments/cortex_lookup.py hostname123
 | `status` | Show groups, venv state, and dependency hashes |
 | `clean` | Remove all managed venvs |
 | `which <script>` | Show which python binary would be used |
+
+## update vs upgrade
+
+- **`adiboupk update`** — met à jour les **dépendances Python** du projet. Re-scanne les groupes, détecte les ajouts/suppressions de modules, réinstalle ceux dont le `requirements.txt` a changé, et supprime les venvs orphelins.
+- **`adiboupk upgrade`** — met à jour **adiboupk lui-même**. Vérifie la dernière version sur GitHub, recompile depuis les sources, et remplace le binaire en place.
 
 ## Options
 
