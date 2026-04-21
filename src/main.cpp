@@ -155,13 +155,36 @@ static bool check_version(VersionCheck& vc) {
 #endif
 
     // Fetch latest version from GitHub API
+    // Try curl first, then wget as fallback
     std::string api_output;
+    std::string url = "https://api.github.com/repos/NoahPodcast/adiboupk/tags?per_page=1";
+
     int rc = adiboupk::platform::run_process(
-        "curl",
-        {"-sSL", "-H", "Accept: application/vnd.github.v3+json",
-         "https://api.github.com/repos/NoahPodcast/adiboupk/tags?per_page=1"},
+        "/usr/bin/curl",
+        {"-sSL", "--max-time", "10",
+         "-H", "Accept: application/vnd.github.v3+json", url},
         true, &api_output
     );
+
+    if (rc != 0 || api_output.empty()) {
+        // Try curl without absolute path
+        api_output.clear();
+        rc = adiboupk::platform::run_process(
+            "curl",
+            {"-sSL", "--max-time", "10",
+             "-H", "Accept: application/vnd.github.v3+json", url},
+            true, &api_output
+        );
+    }
+
+    if (rc != 0 || api_output.empty()) {
+        // Try wget as fallback
+        api_output.clear();
+        rc = adiboupk::platform::run_process(
+            "wget", {"-qO-", "--timeout=10", url},
+            true, &api_output
+        );
+    }
 
     if (rc != 0 || api_output.empty()) {
         return false;
