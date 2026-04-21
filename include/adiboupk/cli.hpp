@@ -9,6 +9,7 @@ namespace cli {
 enum class Command {
     INIT,       // Initialize config by scanning for groups
     INSTALL,    // Create venvs and install dependencies
+    SETUP,      // All-in-one: init + install + audit
     RUN,        // Run a script in the correct venv
     AUDIT,      // Check for cross-group conflicts
     STATUS,     // Show current state (groups, venvs, hashes)
