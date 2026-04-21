@@ -18,18 +18,40 @@ project/
 
 `adiboupk` creates one venv per group and transparently routes each script to the correct one.
 
+## Installation
+
+### Linux / macOS (une commande)
+
+```bash
+curl -sSL https://raw.githubusercontent.com/NoahPodcast/adiboupk/main/install.sh | bash
+```
+
+Installe cmake/g++ si nécessaire, compile, et place le binaire dans `/usr/local/bin`.
+
+### Windows (PowerShell en admin)
+
+```powershell
+irm https://raw.githubusercontent.com/NoahPodcast/adiboupk/main/install.ps1 | iex
+```
+
+Installe CMake/VS Build Tools via winget si nécessaire, compile, et ajoute le binaire au PATH.
+
+### Depuis le repo cloné
+
+```bash
+git clone https://github.com/NoahPodcast/adiboupk.git
+cd adiboupk
+./install.sh        # Linux/macOS
+# ou
+.\install.ps1       # Windows
+```
+
 ## Quick Start
 
 ```bash
-# Build
-cmake -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build
-
-# One command to scan, create venvs, install deps, and audit
-./build/adiboupk setup
-
-# Run a script — adiboupk picks the right venv automatically
-./build/adiboupk run ./Enrichments/cortex_lookup.py hostname123
+cd your-project/
+adiboupk setup
+adiboupk run ./Enrichments/cortex_lookup.py hostname123
 ```
 
 ## Commands
