@@ -60,7 +60,7 @@ target_include_directories(adiboupk PRIVATE
 )
 target_compile_definitions(adiboupk PRIVATE ADIBOUPK_VERSION="${ADIBOUPK_VERSION}")
 
-# Static linking for portable binary
+# Static linking for portable binary (not supported on macOS/Apple clang)
 if(WIN32)
     target_compile_definitions(adiboupk PRIVATE UNICODE _UNICODE)
     if(MSVC)
@@ -68,7 +68,7 @@ if(WIN32)
     else()
         target_link_options(adiboupk PRIVATE -static-libgcc -static-libstdc++)
     endif()
-else()
+elseif(NOT APPLE)
     target_link_options(adiboupk PRIVATE -static-libgcc -static-libstdc++)
 endif()
 
