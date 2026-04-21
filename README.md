@@ -89,6 +89,32 @@ adiboupk run ./Enrichments/cortex_lookup.py hostname123
 3. **`run`** resolves the script's path to a group, finds the group's venv python, and `exec`s it
 4. A SHA-256 hash of each `requirements.txt` is stored in `adiboupk.lock` — reinstall only happens when the file changes
 
+## Per-Package Isolation
+
+When a single `requirements.txt` contains packages with conflicting transitive dependencies (e.g. `requests==2.28.0` needs `urllib3<1.27` but you also need `urllib3==2.2.1`), enable per-package isolation:
+
+```json
+{
+  "isolate_packages": true,
+  "groups": [...]
+}
+```
+
+In this mode:
+- Each package is installed into its own directory via `pip install --target`
+- A `package_map.json` maps package names to their directories
+- At runtime, a Python import hook (`sys.meta_path`) routes each top-level import to the correct isolated directory
+- Conflicting transitive dependencies coexist because each package has its own copy
+
+```
+.venvs/
+├── mygroup/              # Base venv (Python interpreter)
+└── mygroup_isolated/     # Per-package directories
+    ├── package_map.json
+    ├── requests/         # requests + its own urllib3 1.26.x
+    └── urllib3/          # urllib3 2.2.1 (standalone)
+```
+
 ## Integration with Node.js / Orchestrators
 
 Replace direct `python` calls with `adiboupk run`:

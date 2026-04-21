@@ -120,6 +120,10 @@ OPTIONS:
     --force           Force reinstall even if dependencies are up to date
     --verbose         Show detailed output
 
+CONFIG (adiboupk.json):
+    isolate_packages  Install each package into its own directory to avoid
+                      transitive dependency conflicts within a single group.
+
 EXAMPLES:
     adiboupk setup
     adiboupk run ./Enrichments/cortex_lookup.py hostname123

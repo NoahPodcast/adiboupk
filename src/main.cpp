@@ -3,6 +3,7 @@
 #include "adiboupk/config.hpp"
 #include "adiboupk/discovery.hpp"
 #include "adiboupk/installer.hpp"
+#include "adiboupk/isolator.hpp"
 #include "adiboupk/platform.hpp"
 #include "adiboupk/runner.hpp"
 #include "adiboupk/venv.hpp"
@@ -521,6 +522,9 @@ static int cmd_status(const adiboupk::cli::ParsedArgs& args) {
 
     std::cout << "Project: " << root.string() << std::endl;
     std::cout << "Venvs:   " << cfg.venvs_dir.string() << std::endl;
+    if (cfg.isolate_packages) {
+        std::cout << "Mode:    per-package isolation" << std::endl;
+    }
     std::cout << std::endl;
 
     for (const auto& g : cfg.groups) {
@@ -535,9 +539,10 @@ static int cmd_status(const adiboupk::cli::ParsedArgs& args) {
         std::cout << "    Venv:         " << (venv_ok ? "OK" : "MISSING") << std::endl;
         std::cout << "    Status:       " << (needs ? "NEEDS INSTALL" : "UP TO DATE") << std::endl;
 
-        // pip check for transitive conflicts
-        if (venv_ok) {
-            auto vdir = adiboupk::venv::venv_dir_for(cfg, g);
+        if (cfg.isolate_packages) {
+            bool iso_ok = adiboupk::isolator::exists(cfg, g);
+            std::cout << "    Isolation:    " << (iso_ok ? "OK" : "MISSING") << std::endl;
+        } else if (venv_ok) {
             std::string check = adiboupk::installer::pip_check(vdir);
             if (!check.empty() &&
                 check.find("No broken requirements found") == std::string::npos) {
@@ -563,7 +568,11 @@ static int cmd_clean(const adiboupk::cli::ParsedArgs& args) {
     for (const auto& g : cfg.groups) {
         auto vdir = adiboupk::venv::venv_dir_for(cfg, g);
         if (adiboupk::venv::destroy(vdir)) {
-            std::cout << "  Removed " << g.name << std::endl;
+            std::cout << "  Removed venv " << g.name << std::endl;
+            removed++;
+        }
+        if (adiboupk::isolator::clean(cfg, g)) {
+            std::cout << "  Removed isolated deps " << g.name << std::endl;
             removed++;
         }
     }
@@ -576,7 +585,7 @@ static int cmd_clean(const adiboupk::cli::ParsedArgs& args) {
     adiboupk::LockFile empty_lock;
     adiboupk::config::save_lock(empty_lock, root);
 
-    std::cout << "Cleaned " << removed << " venv(s)." << std::endl;
+    std::cout << "Cleaned " << removed << " environment(s)." << std::endl;
     return 0;
 }
 
@@ -594,35 +603,30 @@ static int cmd_uninstall(const adiboupk::cli::ParsedArgs& args) {
         std::cout << "  - adiboupk.lock (lock file)" << std::endl;
         std::cout << std::endl;
 
-        if (!args.force) {
-            std::cout << "Remove project files? [y/N] ";
-            std::cout.flush();
-            std::string answer;
-            std::getline(std::cin, answer);
-            if (!answer.empty() && (answer[0] == 'y' || answer[0] == 'Y')) {
-                // Remove venvs
-                for (const auto& g : cfg.groups) {
-                    auto vdir = adiboupk::venv::venv_dir_for(cfg, g);
-                    adiboupk::venv::destroy(vdir);
-                }
-                std::error_code ec;
-                fs::remove(cfg.venvs_dir, ec);
-                fs::remove(root / adiboupk::config::CONFIG_FILE, ec);
-                fs::remove(root / adiboupk::config::LOCK_FILE, ec);
-                std::cout << "Project files removed." << std::endl;
-            } else {
-                std::cout << "Project files kept." << std::endl;
-            }
-        } else {
+        auto do_remove = [&]() {
             for (const auto& g : cfg.groups) {
-                auto vdir = adiboupk::venv::venv_dir_for(cfg, g);
-                adiboupk::venv::destroy(vdir);
+                adiboupk::venv::destroy(adiboupk::venv::venv_dir_for(cfg, g));
+                adiboupk::isolator::clean(cfg, g);
             }
             std::error_code ec;
             fs::remove(cfg.venvs_dir, ec);
             fs::remove(root / adiboupk::config::CONFIG_FILE, ec);
             fs::remove(root / adiboupk::config::LOCK_FILE, ec);
             std::cout << "Project files removed." << std::endl;
+        };
+
+        if (!args.force) {
+            std::cout << "Remove project files? [y/N] ";
+            std::cout.flush();
+            std::string answer;
+            std::getline(std::cin, answer);
+            if (!answer.empty() && (answer[0] == 'y' || answer[0] == 'Y')) {
+                do_remove();
+            } else {
+                std::cout << "Project files kept." << std::endl;
+            }
+        } else {
+            do_remove();
         }
         std::cout << std::endl;
     }
