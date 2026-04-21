@@ -1,5 +1,7 @@
 #include "adiboupk/auditor.hpp"
+#include "adiboupk/installer.hpp"
 #include "adiboupk/utils.hpp"
+#include "adiboupk/venv.hpp"
 
 #include <map>
 #include <sstream>
@@ -71,6 +73,45 @@ std::string format_conflicts(const std::vector<Conflict>& conflicts) {
 
 bool has_conflicts(const std::vector<Group>& groups) {
     return !audit(groups).empty();
+}
+
+std::string audit_transitive(const Config& cfg) {
+    std::ostringstream out;
+    bool any_issues = false;
+
+    for (const auto& group : cfg.groups) {
+        auto vdir = venv::venv_dir_for(cfg, group);
+        if (!venv::exists(vdir)) continue;
+
+        std::string check_output = installer::pip_check(vdir);
+        if (check_output.empty()) continue;
+
+        // "No broken requirements found." means all good
+        if (check_output.find("No broken requirements found") != std::string::npos) {
+            continue;
+        }
+
+        if (!any_issues) {
+            out << "Transitive dependency conflicts (pip check):\n\n";
+            any_issues = true;
+        }
+
+        out << "  " << group.name << ":\n";
+        std::istringstream stream(check_output);
+        std::string line;
+        while (std::getline(stream, line)) {
+            if (!line.empty()) {
+                out << "    " << line << "\n";
+            }
+        }
+        out << "\n";
+    }
+
+    if (!any_issues) {
+        out << "No transitive dependency conflicts detected.\n";
+    }
+
+    return out.str();
 }
 
 } // namespace auditor

@@ -20,5 +20,13 @@ bool upgrade_pip(const fs::path& venv_dir);
 // Returns number of groups that failed.
 int install_all(Config& cfg, LockFile& lock);
 
+// Run "pip check" in a venv to detect transitive dependency conflicts.
+// Returns the output of pip check. Empty string if no issues.
+std::string pip_check(const fs::path& venv_dir);
+
+// Run "pip list" in a venv to get installed packages.
+// Returns the output.
+std::string pip_list(const fs::path& venv_dir);
+
 } // namespace installer
 } // namespace adiboupk

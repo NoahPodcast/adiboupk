@@ -28,5 +28,9 @@ std::string format_conflicts(const std::vector<Conflict>& conflicts);
 // Check if there are any conflicts (convenience)
 bool has_conflicts(const std::vector<Group>& groups);
 
+// Run pip check on all installed venvs to detect transitive dependency conflicts.
+// Returns formatted output string.
+std::string audit_transitive(const Config& cfg);
+
 } // namespace auditor
 } // namespace adiboupk

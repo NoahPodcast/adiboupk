@@ -497,8 +497,14 @@ static int cmd_audit(const adiboupk::cli::ParsedArgs& args) {
         return 1;
     }
 
+    // Cross-group conflicts (requirements.txt vs requirements.txt)
+    std::cout << "==> Cross-group conflicts (requirements.txt)..." << std::endl;
     auto conflicts = adiboupk::auditor::audit(cfg.groups);
     std::cout << adiboupk::auditor::format_conflicts(conflicts);
+
+    // Transitive dependency conflicts (pip check inside each venv)
+    std::cout << "==> Transitive dependency conflicts (sub-dependencies)..." << std::endl;
+    std::cout << adiboupk::auditor::audit_transitive(cfg);
 
     return conflicts.empty() ? 0 : 1;
 }
@@ -528,6 +534,19 @@ static int cmd_status(const adiboupk::cli::ParsedArgs& args) {
         std::cout << "    Hash:         " << g.requirements_hash.substr(0, 12) << "..." << std::endl;
         std::cout << "    Venv:         " << (venv_ok ? "OK" : "MISSING") << std::endl;
         std::cout << "    Status:       " << (needs ? "NEEDS INSTALL" : "UP TO DATE") << std::endl;
+
+        // pip check for transitive conflicts
+        if (venv_ok) {
+            auto vdir = adiboupk::venv::venv_dir_for(cfg, g);
+            std::string check = adiboupk::installer::pip_check(vdir);
+            if (!check.empty() &&
+                check.find("No broken requirements found") == std::string::npos) {
+                std::cout << "    Deps:         CONFLICTS" << std::endl;
+            } else {
+                std::cout << "    Deps:         OK" << std::endl;
+            }
+        }
+
         std::cout << std::endl;
     }
 

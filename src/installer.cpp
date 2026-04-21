@@ -3,6 +3,7 @@
 #include "adiboupk/venv.hpp"
 
 #include <iostream>
+#include <sstream>
 
 namespace adiboupk {
 namespace installer {
@@ -75,6 +76,21 @@ int install_all(Config& cfg, LockFile& lock) {
             continue;
         }
 
+        // Check for transitive dependency conflicts
+        std::string check_output = pip_check(vdir);
+        if (!check_output.empty() &&
+            check_output.find("No broken requirements found") == std::string::npos) {
+            std::cout << "    Warning: dependency conflicts detected:" << std::endl;
+            // Indent each line
+            std::istringstream stream(check_output);
+            std::string line;
+            while (std::getline(stream, line)) {
+                if (!line.empty()) {
+                    std::cout << "      " << line << std::endl;
+                }
+            }
+        }
+
         // Update lock
         LockEntry entry;
         entry.name = group.name;
@@ -86,6 +102,25 @@ int install_all(Config& cfg, LockFile& lock) {
     }
 
     return failures;
+}
+
+std::string pip_check(const fs::path& venv_dir) {
+    auto pip = platform::venv_pip(venv_dir);
+    if (!fs::exists(pip)) return "pip not found";
+
+    std::string output;
+    // pip check returns exit code 1 if there are issues
+    platform::run_process(pip.string(), {"check"}, true, &output);
+    return output;
+}
+
+std::string pip_list(const fs::path& venv_dir) {
+    auto pip = platform::venv_pip(venv_dir);
+    if (!fs::exists(pip)) return "";
+
+    std::string output;
+    platform::run_process(pip.string(), {"list", "--format=columns"}, true, &output);
+    return output;
 }
 
 } // namespace installer
