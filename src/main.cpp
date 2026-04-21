@@ -263,19 +263,20 @@ static int cmd_upgrade(const adiboupk::cli::ParsedArgs& args) {
         tmp_output.pop_back();
     std::string tmp_dir = tmp_output.empty() ? "/tmp/adiboupk-upgrade" : tmp_output;
 
-    std::cout << "  Cloning v" << vc.latest << "..." << std::endl;
+    // Clone the tagged release, fall back to main if tag doesn't exist
+    std::cout << "  Downloading v" << vc.latest << "..." << std::endl;
     int rc = adiboupk::platform::run_process(
         "git", {"clone", "--depth", "1", "--branch", "v" + vc.latest,
                 "https://github.com/NoahPodcast/adiboupk.git", tmp_dir}
     );
     if (rc != 0) {
-        // Fallback to main branch
         adiboupk::platform::run_process("rm", {"-rf", tmp_dir});
         adiboupk::platform::run_process("mktemp", {"-d"}, true, &tmp_output);
         while (!tmp_output.empty() && (tmp_output.back() == '\n' || tmp_output.back() == '\r'))
             tmp_output.pop_back();
         tmp_dir = tmp_output.empty() ? "/tmp/adiboupk-upgrade" : tmp_output;
 
+        std::cout << "  Tag not found, using main branch..." << std::endl;
         rc = adiboupk::platform::run_process(
             "git", {"clone", "--depth", "1",
                     "https://github.com/NoahPodcast/adiboupk.git", tmp_dir}
@@ -334,14 +335,22 @@ static int cmd_upgrade(const adiboupk::cli::ParsedArgs& args) {
 
     if (!try_install(false) && !try_install(true)) {
         std::cerr << "Failed to install new binary to " << dest << std::endl;
-        adiboupk::platform::run_process("rm", {"-rf", tmp_dir});
+        std::cerr << "Try manually: sudo cp " << new_binary << " " << dest << std::endl;
+        // Don't clean up so user can copy manually
         return 1;
     }
 
     // Cleanup
     adiboupk::platform::run_process("rm", {"-rf", tmp_dir});
 
-    std::cout << std::endl << "==> Successfully upgraded: " << vc.current << " -> " << vc.latest << std::endl;
+    // Verify the upgrade worked
+    std::string verify_output;
+    adiboupk::platform::run_process(dest, {"version"}, true, &verify_output);
+    if (verify_output.find(vc.latest) != std::string::npos) {
+        std::cout << std::endl << "==> Successfully upgraded: " << vc.current << " -> " << vc.latest << std::endl;
+    } else {
+        std::cout << std::endl << "==> Binary replaced. Verify with: adiboupk version" << std::endl;
+    }
     return 0;
 }
 
