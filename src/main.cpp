@@ -264,8 +264,16 @@ static int cmd_upgrade(const adiboupk::cli::ParsedArgs& args) {
     std::cout << std::endl << "==> Upgrading to " << vc.latest << "..." << std::endl;
 
     // Find where the current binary is installed
+    fs::path self_path;
     std::error_code ec;
-    auto self_path = fs::read_symlink("/proc/self/exe", ec);
+
+#ifdef _WIN32
+    wchar_t self_buf[MAX_PATH];
+    if (GetModuleFileNameW(nullptr, self_buf, MAX_PATH) > 0) {
+        self_path = self_buf;
+    }
+#else
+    self_path = fs::read_symlink("/proc/self/exe", ec);
     if (self_path.empty()) {
         std::string which_output;
         adiboupk::platform::run_process("which", {"adiboupk"}, true, &which_output);
@@ -275,39 +283,47 @@ static int cmd_upgrade(const adiboupk::cli::ParsedArgs& args) {
             self_path = which_output;
         }
     }
+#endif
 
     std::string install_dir;
     if (!self_path.empty()) {
         install_dir = self_path.parent_path().string();
     }
     if (install_dir.empty()) {
+#ifdef _WIN32
+        install_dir = adiboupk::platform::get_env("LOCALAPPDATA") + "\\adiboupk";
+#else
         install_dir = "/usr/local/bin";
+#endif
     }
 
-    // Clone
+    // Create temp directory (cross-platform)
+    fs::path tmp_dir;
+#ifdef _WIN32
+    tmp_dir = fs::path(adiboupk::platform::get_env("TEMP")) / "adiboupk-upgrade";
+#else
     std::string tmp_output;
     adiboupk::platform::run_process("mktemp", {"-d"}, true, &tmp_output);
     while (!tmp_output.empty() && (tmp_output.back() == '\n' || tmp_output.back() == '\r'))
         tmp_output.pop_back();
-    std::string tmp_dir = tmp_output.empty() ? "/tmp/adiboupk-upgrade" : tmp_output;
+    tmp_dir = tmp_output.empty() ? "/tmp/adiboupk-upgrade" : tmp_output;
+#endif
+    // Clean any leftover from previous upgrade
+    fs::remove_all(tmp_dir, ec);
 
     // Clone the tagged release, fall back to main if tag doesn't exist
     std::cout << "  Downloading v" << vc.latest << "..." << std::endl;
     int rc = adiboupk::platform::run_process(
         "git", {"clone", "--depth", "1", "--branch", "v" + vc.latest,
-                "https://github.com/NoahPodcast/adiboupk.git", tmp_dir}
+                "https://github.com/NoahPodcast/adiboupk.git", tmp_dir.string()}
     );
     if (rc != 0) {
-        adiboupk::platform::run_process("rm", {"-rf", tmp_dir});
-        adiboupk::platform::run_process("mktemp", {"-d"}, true, &tmp_output);
-        while (!tmp_output.empty() && (tmp_output.back() == '\n' || tmp_output.back() == '\r'))
-            tmp_output.pop_back();
-        tmp_dir = tmp_output.empty() ? "/tmp/adiboupk-upgrade" : tmp_output;
+        fs::remove_all(tmp_dir, ec);
 
         std::cout << "  Tag not found, using main branch..." << std::endl;
         rc = adiboupk::platform::run_process(
             "git", {"clone", "--depth", "1",
-                    "https://github.com/NoahPodcast/adiboupk.git", tmp_dir}
+                    "https://github.com/NoahPodcast/adiboupk.git", tmp_dir.string()}
         );
         if (rc != 0) {
             std::cerr << "Failed to clone repository." << std::endl;
@@ -317,35 +333,81 @@ static int cmd_upgrade(const adiboupk::cli::ParsedArgs& args) {
 
     // Build
     std::cout << "  Building..." << std::endl;
-    rc = adiboupk::platform::run_process(
-        "cmake", {"-B", tmp_dir + "/build", "-S", tmp_dir,
-                  "-DCMAKE_BUILD_TYPE=Release", "-DBUILD_TESTS=OFF"}
-    );
+    std::vector<std::string> cmake_args = {
+        "-B", (tmp_dir / "build").string(),
+        "-S", tmp_dir.string(),
+        "-DCMAKE_BUILD_TYPE=Release", "-DBUILD_TESTS=OFF"
+    };
+
+#ifdef _WIN32
+    // Use MinGW if available, otherwise let CMake pick
+    if (adiboupk::platform::run_process("g++", {"--version"}, true, nullptr) == 0) {
+        cmake_args.push_back("-G");
+        cmake_args.push_back("MinGW Makefiles");
+    }
+#endif
+
+    rc = adiboupk::platform::run_process("cmake", cmake_args);
     if (rc != 0) {
         std::cerr << "Configure failed." << std::endl;
-        adiboupk::platform::run_process("rm", {"-rf", tmp_dir});
+        fs::remove_all(tmp_dir, ec);
         return 1;
     }
 
     rc = adiboupk::platform::run_process(
-        "cmake", {"--build", tmp_dir + "/build", "--config", "Release"}
+        "cmake", {"--build", (tmp_dir / "build").string(), "--config", "Release"}
     );
     if (rc != 0) {
         std::cerr << "Build failed." << std::endl;
-        adiboupk::platform::run_process("rm", {"-rf", tmp_dir});
+        fs::remove_all(tmp_dir, ec);
         return 1;
     }
 
-    // Install (copy+rename to avoid "Text file busy")
+    // Find the new binary
     std::cout << "  Installing to " << install_dir << "..." << std::endl;
-    std::string new_binary = tmp_dir + "/build/adiboupk";
-    std::string dest = install_dir + "/adiboupk";
-    std::string dest_tmp = dest + ".new";
 
+#ifdef _WIN32
+    std::string binary_name = "adiboupk.exe";
+#else
+    std::string binary_name = "adiboupk";
+#endif
+
+    fs::path new_binary = tmp_dir / "build" / binary_name;
+    if (!fs::exists(new_binary)) {
+        new_binary = tmp_dir / "build" / "Release" / binary_name;
+    }
+    if (!fs::exists(new_binary)) {
+        std::cerr << "Build succeeded but binary not found." << std::endl;
+        fs::remove_all(tmp_dir, ec);
+        return 1;
+    }
+
+    fs::path dest = fs::path(install_dir) / binary_name;
+    fs::path dest_tmp = fs::path(install_dir) / (binary_name + ".new");
+
+    // Install
+    fs::create_directories(install_dir, ec);
+
+#ifdef _WIN32
+    // Windows: can't overwrite a running exe directly, use rename trick
+    fs::path dest_old = fs::path(install_dir) / (binary_name + ".old");
+    fs::remove(dest_old, ec);  // clean previous .old
+    fs::rename(dest, dest_old, ec);  // move running exe to .old
+    fs::copy_file(new_binary, dest, fs::copy_options::overwrite_existing, ec);
+    if (ec) {
+        // Restore if copy failed
+        fs::rename(dest_old, dest, ec);
+        std::cerr << "Failed to install new binary." << std::endl;
+        fs::remove_all(tmp_dir, ec);
+        return 1;
+    }
+    fs::remove(dest_old, ec);  // clean up .old
+#else
+    // Unix: copy to .new, then rename (atomic on same filesystem)
     auto try_install = [&](bool use_sudo) -> bool {
-        std::vector<std::string> cp_args = {new_binary, dest_tmp};
-        std::vector<std::string> mv_args = {dest_tmp, dest};
-        std::vector<std::string> chmod_args = {"+x", dest};
+        std::vector<std::string> cp_args = {new_binary.string(), dest_tmp.string()};
+        std::vector<std::string> mv_args = {dest_tmp.string(), dest.string()};
+        std::vector<std::string> chmod_args = {"+x", dest.string()};
 
         if (use_sudo) {
             cp_args.insert(cp_args.begin(), "cp");
@@ -362,18 +424,18 @@ static int cmd_upgrade(const adiboupk::cli::ParsedArgs& args) {
     };
 
     if (!try_install(false) && !try_install(true)) {
-        std::cerr << "Failed to install new binary to " << dest << std::endl;
-        std::cerr << "Try manually: sudo cp " << new_binary << " " << dest << std::endl;
-        // Don't clean up so user can copy manually
+        std::cerr << "Failed to install new binary to " << dest.string() << std::endl;
+        std::cerr << "Try manually: sudo cp " << new_binary.string() << " " << dest.string() << std::endl;
         return 1;
     }
+#endif
 
     // Cleanup
-    adiboupk::platform::run_process("rm", {"-rf", tmp_dir});
+    fs::remove_all(tmp_dir, ec);
 
     // Verify the upgrade worked
     std::string verify_output;
-    adiboupk::platform::run_process(dest, {"version"}, true, &verify_output);
+    adiboupk::platform::run_process(dest.string(), {"version"}, true, &verify_output);
     if (verify_output.find(vc.latest) != std::string::npos) {
         std::cout << std::endl << "==> Successfully upgraded: " << vc.current << " -> " << vc.latest << std::endl;
     } else {
