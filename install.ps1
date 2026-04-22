@@ -65,54 +65,70 @@ if ($NeedCmake -or -not $Compiler) {
     }
 
     if (-not $Compiler) {
-        Info "Installing MinGW (g++)..."
+        # Strategy: download a standalone MinGW-w64 build (no MSYS2 needed)
+        $mingwDir = "C:\mingw64"
+        $mingwBin = "$mingwDir\bin"
 
-        # Check if MSYS2 is already installed (e.g. from a previous attempt)
-        $msys2Bash = "C:\msys64\usr\bin\bash.exe"
-        $mingwBin = "C:\msys64\mingw64\bin"
+        if (-not (Test-Path "$mingwBin\g++.exe")) {
+            Info "Downloading MinGW-w64 (standalone)..."
+            $mingwUrl = "https://github.com/niXman/mingw-builds-binaries/releases/download/14.2.0-rt_v12-rev1/x86_64-14.2.0-release-posix-seh-ucrt-rt_v12-rev1.7z"
+            $archive = Join-Path $env:TEMP "mingw64.7z"
 
-        if (-not (Test-Path $msys2Bash)) {
-            if ($HasWinget) {
-                winget install --id MSYS2.MSYS2 --accept-package-agreements --accept-source-agreements --silent
-            } elseif ($HasChoco) {
-                choco install msys2 -y | Out-Null
+            # Download
+            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+            Invoke-WebRequest -Uri $mingwUrl -OutFile $archive -UseBasicParsing
+
+            # Extract — try 7z, then tar, then Expand-Archive
+            $extracted = $false
+            if (Get-Command 7z -ErrorAction SilentlyContinue) {
+                & 7z x $archive -o"C:\" -y 2>&1 | Out-Null
+                $extracted = $true
+            } else {
+                # Try installing 7zip via winget
+                if ($HasWinget) {
+                    Info "Installing 7-Zip to extract MinGW..."
+                    winget install --id 7zip.7zip --accept-package-agreements --accept-source-agreements --silent
+                    Refresh-Path
+                    $sevenZip = "C:\Program Files\7-Zip\7z.exe"
+                    if (Test-Path $sevenZip) {
+                        & $sevenZip x $archive -o"C:\" -y 2>&1 | Out-Null
+                        $extracted = $true
+                    }
+                }
             }
-            Refresh-Path
+
+            Remove-Item $archive -ErrorAction SilentlyContinue
+
+            if (-not $extracted) {
+                Error "Could not extract MinGW archive (7-Zip required)."
+                Error "Install 7-Zip and re-run, or install MinGW manually."
+                exit 1
+            }
+
+            # Add to system PATH permanently
+            $machinePath = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
+            if ($machinePath -notlike "*$mingwBin*") {
+                Info "Adding MinGW to system PATH..."
+                try {
+                    [System.Environment]::SetEnvironmentVariable("Path", "$machinePath;$mingwBin", "Machine")
+                } catch {
+                    Warn "Could not add to system PATH (need admin). Adding to user PATH."
+                    $userPath = [System.Environment]::GetEnvironmentVariable("Path", "User")
+                    [System.Environment]::SetEnvironmentVariable("Path", "$userPath;$mingwBin", "User")
+                }
+            }
         }
 
-        if (Test-Path $msys2Bash) {
-            Info "Installing gcc toolchain via MSYS2 pacman..."
-            # MSYS2 needs initialization on first run — run bash -lc to trigger it
-            # Then install the mingw64 gcc toolchain and make
-            & $msys2Bash -lc "pacman --noconfirm -Syuu" 2>&1 | Out-Null
-            & $msys2Bash -lc "pacman --noconfirm -S mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-make make" 2>&1 | Out-Null
-
-            if (Test-Path $mingwBin) {
-                $env:Path = "$mingwBin;C:\msys64\usr\bin;$env:Path"
-            }
-        } elseif ($HasChoco) {
-            # Fallback: standalone MinGW via chocolatey
-            Info "Falling back to chocolatey MinGW..."
-            choco install mingw -y | Out-Null
-            Refresh-Path
-        }
-
+        $env:Path = "$mingwBin;$env:Path"
         Refresh-Path
 
         # Re-check
         if (Get-Command g++ -ErrorAction SilentlyContinue) {
             $Compiler = "mingw"
             $Generator = "MinGW Makefiles"
-        } elseif (Get-Command cl -ErrorAction SilentlyContinue) {
-            $Compiler = "msvc"
         } else {
-            Error "Could not find a C++ compiler after installation."
-            Error ""
-            Error "MSYS2 was installed but g++ is not in PATH."
-            Error "Open 'MSYS2 MinGW x64' from the Start menu and run:"
-            Error "  pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake make"
-            Error ""
-            Error "Then re-run this installer."
+            Error "Could not find g++ after installing MinGW."
+            Error "Try installing manually: https://www.mingw-w64.org/"
             exit 1
         }
     }
