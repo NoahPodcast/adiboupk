@@ -14,7 +14,41 @@ Documentation for the [adiboupk](https://github.com/NoahPodcast/adiboupk) projec
 | [Per-Package Isolation](docs/isolation.md) | Per-package isolation mode |
 | [Tutorial](docs/tutorial.md) | Step-by-step guide |
 
-## Deploy on Ubuntu Server
+## Deploy with Docker
+
+### Using docker compose
+
+```bash
+docker compose up -d
+```
+
+The documentation is available at `http://localhost:8000`. The `docs/` and `mkdocs.yml` files are mounted as volumes, so changes are reflected live.
+
+```bash
+# Stop
+docker compose down
+
+# Rebuild after changing Dockerfile or requirements
+docker compose up -d --build
+```
+
+### Using docker directly
+
+```bash
+# Build
+docker build -t adiboupk-docs .
+
+# Run
+docker run -d -p 8000:8000 --name adiboupk-docs adiboupk-docs
+
+# Run with live reload (mount local files)
+docker run -d -p 8000:8000 \
+  -v ./docs:/docs/docs \
+  -v ./mkdocs.yml:/docs/mkdocs.yml \
+  --name adiboupk-docs adiboupk-docs
+```
+
+## Deploy on Ubuntu Server (without Docker)
 
 The `setup.sh` script installs dependencies and starts the MkDocs server.
 

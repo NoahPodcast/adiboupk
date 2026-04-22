@@ -1,0 +1,6 @@
+site/
+.venv/
+.git/
+.gitignore
+README.md
+setup.sh
