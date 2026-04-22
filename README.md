@@ -1,45 +1,45 @@
 # adiboupk — Documentation
 
-Documentation du projet [adiboupk](https://github.com/NoahPodcast/adiboupk), générée avec [MkDocs](https://www.mkdocs.org/) et le thème [Material](https://squidfunk.github.io/mkdocs-material/).
+Documentation for the [adiboupk](https://github.com/NoahPodcast/adiboupk) project, built with [MkDocs](https://www.mkdocs.org/) and the [Material](https://squidfunk.github.io/mkdocs-material/) theme.
 
-## Contenu
+## Contents
 
 | Page | Description |
 |------|-------------|
-| [Home](docs/index.md) | Présentation du projet |
-| [Installation](docs/installation.md) | Guide d'installation |
-| [Concepts](docs/concepts.md) | Fonctionnement interne |
-| [Configuration](docs/configuration.md) | Référence `adiboupk.json` |
-| [Commands](docs/commands.md) | Toutes les commandes CLI |
-| [Per-Package Isolation](docs/isolation.md) | Isolation par paquet |
-| [Tutorial](docs/tutorial.md) | Guide pas à pas |
+| [Home](docs/index.md) | Project overview |
+| [Installation](docs/installation.md) | Installation guide |
+| [Concepts](docs/concepts.md) | How it works |
+| [Configuration](docs/configuration.md) | `adiboupk.json` reference |
+| [Commands](docs/commands.md) | CLI commands |
+| [Per-Package Isolation](docs/isolation.md) | Per-package isolation mode |
+| [Tutorial](docs/tutorial.md) | Step-by-step guide |
 
-## Déployer sur Ubuntu Server
+## Deploy on Ubuntu Server
 
-Le script `setup.sh` installe les dépendances et lance le serveur MkDocs.
+The `setup.sh` script installs dependencies and starts the MkDocs server.
 
-### Lancer le serveur
+### Start the server
 
 ```bash
 sudo ./setup.sh
 ```
 
-Par défaut, le serveur écoute sur `0.0.0.0:8000`.
+By default, the server listens on `0.0.0.0:8000`.
 
 ### Options
 
 ```bash
-# Port et host personnalisés
+# Custom port and host
 sudo ./setup.sh --port 9000 --host 127.0.0.1
 
-# Générer le site statique sans serveur
+# Build static site without starting a server
 sudo ./setup.sh --build-only
 
-# Installer en tant que service systemd (démarrage automatique)
+# Install as a systemd service (auto-start on boot)
 sudo ./setup.sh --systemd
 ```
 
-### Gérer le service systemd
+### Manage the systemd service
 
 ```bash
 sudo systemctl status mkdocs-adiboupk
