@@ -43,7 +43,11 @@ fs::path resolve_python(const fs::path& script_path, const Config& cfg) {
         auto deps_dir = isolator::deps_dir_for(cfg, *group);
         isolator::ensure_runtime_files(deps_dir);
 
+#ifdef _WIN32
+        _putenv_s("ADIBOUPK_PACKAGE_MAP", fs::absolute(map_path).string().c_str());
+#else
         setenv("ADIBOUPK_PACKAGE_MAP", fs::absolute(map_path).string().c_str(), 1);
+#endif
 
         auto python = resolve_python(script_path, cfg);
         std::string python_cmd;
