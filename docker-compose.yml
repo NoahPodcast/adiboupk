@@ -2,8 +2,15 @@ services:
   docs:
     build: .
     ports:
-      - "8000:8000"
+      - "127.0.0.1:${MKDOCS_PORT:-8000}:8000"
     volumes:
       - ./docs:/docs/docs
       - ./mkdocs.yml:/docs/mkdocs.yml
+    restart: unless-stopped
+
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      - docs
     restart: unless-stopped

@@ -14,7 +14,58 @@ Documentation for the [adiboupk](https://github.com/NoahPodcast/adiboupk) projec
 | [Per-Package Isolation](docs/isolation.md) | Per-package isolation mode |
 | [Tutorial](docs/tutorial.md) | Step-by-step guide |
 
-## Deploy with Docker
+## Deploy on Ubuntu Server
+
+The setup script creates a dedicated system user, installs Docker, and starts MkDocs behind a Cloudflare Tunnel.
+
+### Prerequisites
+
+1. An Ubuntu Server with root access
+2. A [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/) token — create one in the Cloudflare Zero Trust dashboard and point it to `http://docs:8000`
+
+### Quick start
+
+```bash
+git clone --branch docs --single-branch https://github.com/NoahPodcast/adiboupk.git
+cd adiboupk
+sudo ./setup.sh --tunnel-token <YOUR_TUNNEL_TOKEN>
+```
+
+This will:
+- Create a system user `adiboupk` (no login shell)
+- Install Docker if not already present
+- Start MkDocs on `127.0.0.1:8000` (not exposed publicly)
+- Start a Cloudflare Tunnel container to expose the site on your domain
+
+### Options
+
+```bash
+sudo ./setup.sh --tunnel-token <TOKEN>                # Required
+sudo ./setup.sh --tunnel-token <TOKEN> --port 9000    # Custom port
+sudo ./setup.sh --tunnel-token <TOKEN> --user docs    # Custom username
+sudo ./setup.sh --tunnel-token <TOKEN> --install-dir /srv/docs  # Custom path
+```
+
+### Manage the services
+
+```bash
+cd /opt/adiboupk-docs
+
+# Logs
+sudo -u adiboupk docker compose logs -f
+
+# Restart
+sudo -u adiboupk docker compose restart
+
+# Stop
+sudo -u adiboupk docker compose down
+
+# Update docs and restart
+sudo -u adiboupk git pull
+sudo -u adiboupk docker compose up -d --build
+```
+
+## Local development
 
 ### Using docker compose
 
@@ -22,62 +73,14 @@ Documentation for the [adiboupk](https://github.com/NoahPodcast/adiboupk) projec
 docker compose up -d
 ```
 
-The documentation is available at `http://localhost:8000`. The `docs/` and `mkdocs.yml` files are mounted as volumes, so changes are reflected live.
-
-```bash
-# Stop
-docker compose down
-
-# Rebuild after changing Dockerfile or requirements
-docker compose up -d --build
-```
+Docs are available at `http://localhost:8000` with live reload.
 
 ### Using docker directly
 
 ```bash
-# Build
 docker build -t adiboupk-docs .
-
-# Run
-docker run -d -p 8000:8000 --name adiboupk-docs adiboupk-docs
-
-# Run with live reload (mount local files)
 docker run -d -p 8000:8000 \
   -v ./docs:/docs/docs \
   -v ./mkdocs.yml:/docs/mkdocs.yml \
-  --name adiboupk-docs adiboupk-docs
-```
-
-## Deploy on Ubuntu Server (without Docker)
-
-The `setup.sh` script installs dependencies and starts the MkDocs server.
-
-### Start the server
-
-```bash
-sudo ./setup.sh
-```
-
-By default, the server listens on `0.0.0.0:8000`.
-
-### Options
-
-```bash
-# Custom port and host
-sudo ./setup.sh --port 9000 --host 127.0.0.1
-
-# Build static site without starting a server
-sudo ./setup.sh --build-only
-
-# Install as a systemd service (auto-start on boot)
-sudo ./setup.sh --systemd
-```
-
-### Manage the systemd service
-
-```bash
-sudo systemctl status mkdocs-adiboupk
-sudo systemctl stop mkdocs-adiboupk
-sudo systemctl restart mkdocs-adiboupk
-sudo journalctl -u mkdocs-adiboupk -f
+  adiboupk-docs
 ```

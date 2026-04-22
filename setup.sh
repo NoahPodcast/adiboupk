@@ -1,92 +1,102 @@
 #!/usr/bin/env bash
-# Setup and serve adiboupk MkDocs documentation on Ubuntu Server.
-# Usage: sudo ./setup.sh [--port PORT] [--host HOST]
+# Deploy adiboupk documentation on Ubuntu Server.
+#
+# Creates a dedicated system user, installs Docker if needed,
+# clones the docs branch, and starts MkDocs + Cloudflare Tunnel.
+#
+# Usage: sudo ./setup.sh --tunnel-token <CLOUDFLARE_TUNNEL_TOKEN>
 #
 # Options:
-#   --port PORT   Port to serve on (default: 8000)
-#   --host HOST   Host to bind to (default: 0.0.0.0)
-#   --build-only  Build static site in site/ without starting a server
-#   --systemd     Install as a systemd service (auto-start on boot)
+#   --tunnel-token TOKEN   Cloudflare Tunnel token (required)
+#   --user USER            System user to create (default: adiboupk)
+#   --install-dir DIR      Installation directory (default: /opt/adiboupk-docs)
+#   --port PORT            MkDocs port (default: 8000)
 
 set -euo pipefail
 
+APP_USER="adiboupk"
+INSTALL_DIR="/opt/adiboupk-docs"
 PORT=8000
-HOST="0.0.0.0"
-BUILD_ONLY=false
-INSTALL_SERVICE=false
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+TUNNEL_TOKEN=""
 
 info()  { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
-error() { printf '\033[1;31m==>\033[0m %s\n' "$*" >&2; }
+error() { printf '\033[1;31m==>\033[0m %s\n' "$*" >&2; exit 1; }
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --port)       PORT="$2"; shift 2 ;;
-        --host)       HOST="$2"; shift 2 ;;
-        --build-only) BUILD_ONLY=true; shift ;;
-        --systemd)    INSTALL_SERVICE=true; shift ;;
-        *)            error "Unknown option: $1"; exit 1 ;;
+        --tunnel-token) TUNNEL_TOKEN="$2"; shift 2 ;;
+        --user)         APP_USER="$2"; shift 2 ;;
+        --install-dir)  INSTALL_DIR="$2"; shift 2 ;;
+        --port)         PORT="$2"; shift 2 ;;
+        *)              error "Unknown option: $1" ;;
     esac
 done
 
-# --- Install dependencies ---
-info "Installing system packages..."
-apt-get update -qq
-apt-get install -y -qq python3 python3-pip python3-venv > /dev/null
-
-# --- Create venv ---
-VENV_DIR="$SCRIPT_DIR/.venv"
-if [ ! -d "$VENV_DIR" ]; then
-    info "Creating Python virtual environment..."
-    python3 -m venv "$VENV_DIR"
-fi
-source "$VENV_DIR/bin/activate"
-
-# --- Install MkDocs + Material theme ---
-info "Installing MkDocs and dependencies..."
-pip install --quiet --upgrade pip
-pip install --quiet mkdocs-material
-
-# --- Build only ---
-if [ "$BUILD_ONLY" = true ]; then
-    info "Building static site..."
-    cd "$SCRIPT_DIR"
-    mkdocs build
-    info "Static site generated in $SCRIPT_DIR/site/"
-    exit 0
+if [ -z "$TUNNEL_TOKEN" ]; then
+    error "Missing required option: --tunnel-token <TOKEN>"
 fi
 
-# --- Systemd service ---
-if [ "$INSTALL_SERVICE" = true ]; then
-    info "Installing systemd service (port $PORT, host $HOST)..."
-
-    cat > /etc/systemd/system/mkdocs-adiboupk.service <<EOF
-[Unit]
-Description=adiboupk MkDocs documentation server
-After=network.target
-
-[Service]
-Type=simple
-WorkingDirectory=$SCRIPT_DIR
-ExecStart=$VENV_DIR/bin/mkdocs serve --dev-addr $HOST:$PORT
-Restart=on-failure
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-    systemctl daemon-reload
-    systemctl enable mkdocs-adiboupk
-    systemctl restart mkdocs-adiboupk
-
-    info "Service installed and started."
-    info "Documentation available at http://$HOST:$PORT"
-    info "Manage with: systemctl {start|stop|restart|status} mkdocs-adiboupk"
-    exit 0
+if [ "$(id -u)" -ne 0 ]; then
+    error "This script must be run as root (sudo)"
 fi
 
-# --- Serve directly ---
-info "Serving documentation on http://$HOST:$PORT"
-cd "$SCRIPT_DIR"
-mkdocs serve --dev-addr "$HOST:$PORT"
+# --- Create dedicated user ---
+if ! id "$APP_USER" &>/dev/null; then
+    info "Creating system user '$APP_USER'..."
+    useradd --system --create-home --shell /usr/sbin/nologin "$APP_USER"
+fi
+
+# --- Install Docker if not present ---
+if ! command -v docker &>/dev/null; then
+    info "Installing Docker..."
+    apt-get update -qq
+    apt-get install -y -qq ca-certificates curl gnupg >/dev/null
+    install -m 0755 -d /etc/apt/keyrings
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+    chmod a+r /etc/apt/keyrings/docker.gpg
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
+        > /etc/apt/sources.list.d/docker.list
+    apt-get update -qq
+    apt-get install -y -qq docker-ce docker-ce-cli containerd.io docker-compose-plugin >/dev/null
+fi
+
+# --- Add user to docker group ---
+if ! groups "$APP_USER" | grep -q docker; then
+    info "Adding '$APP_USER' to docker group..."
+    usermod -aG docker "$APP_USER"
+fi
+
+# --- Clone or update docs branch ---
+if [ -d "$INSTALL_DIR/.git" ]; then
+    info "Updating existing installation..."
+    sudo -u "$APP_USER" git -C "$INSTALL_DIR" pull --ff-only
+else
+    info "Cloning docs branch to $INSTALL_DIR..."
+    git clone --branch docs --single-branch \
+        https://github.com/NoahPodcast/adiboupk.git "$INSTALL_DIR"
+    chown -R "$APP_USER:$APP_USER" "$INSTALL_DIR"
+fi
+
+# --- Write tunnel token to .env ---
+info "Writing tunnel configuration..."
+cat > "$INSTALL_DIR/.env" <<ENVEOF
+CLOUDFLARE_TUNNEL_TOKEN=$TUNNEL_TOKEN
+MKDOCS_PORT=$PORT
+ENVEOF
+chown "$APP_USER:$APP_USER" "$INSTALL_DIR/.env"
+chmod 600 "$INSTALL_DIR/.env"
+
+# --- Start services ---
+info "Starting services..."
+cd "$INSTALL_DIR"
+sudo -u "$APP_USER" docker compose up -d --build
+
+info "Done."
+info "MkDocs is running on port $PORT (localhost only)."
+info "Cloudflare Tunnel is exposing it to your configured domain."
+info ""
+info "Manage with:"
+info "  cd $INSTALL_DIR && sudo -u $APP_USER docker compose logs -f"
+info "  cd $INSTALL_DIR && sudo -u $APP_USER docker compose restart"
+info "  cd $INSTALL_DIR && sudo -u $APP_USER docker compose down"
