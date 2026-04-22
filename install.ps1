@@ -66,21 +66,37 @@ if ($NeedCmake -or -not $Compiler) {
 
     if (-not $Compiler) {
         Info "Installing MinGW (g++)..."
-        if ($HasWinget) {
-            winget install --id MSYS2.MSYS2 --accept-package-agreements --accept-source-agreements --silent
+
+        # Check if MSYS2 is already installed (e.g. from a previous attempt)
+        $msys2Bash = "C:\msys64\usr\bin\bash.exe"
+        $mingwBin = "C:\msys64\mingw64\bin"
+
+        if (-not (Test-Path $msys2Bash)) {
+            if ($HasWinget) {
+                winget install --id MSYS2.MSYS2 --accept-package-agreements --accept-source-agreements --silent
+            } elseif ($HasChoco) {
+                choco install msys2 -y | Out-Null
+            }
             Refresh-Path
-            # Install mingw-w64-x86_64-gcc via pacman
-            $msys2 = "C:\msys64\usr\bin\bash.exe"
-            if (Test-Path $msys2) {
-                & $msys2 -lc "pacman -S --noconfirm mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake make" 2>&1 | Out-Null
-                $mingwBin = "C:\msys64\mingw64\bin"
-                if (Test-Path $mingwBin) {
-                    $env:Path = "$mingwBin;$env:Path"
-                }
+        }
+
+        if (Test-Path $msys2Bash) {
+            Info "Installing gcc toolchain via MSYS2 pacman..."
+            # MSYS2 needs initialization on first run — run bash -lc to trigger it
+            # Then install the mingw64 gcc toolchain and make
+            & $msys2Bash -lc "pacman --noconfirm -Syuu" 2>&1 | Out-Null
+            & $msys2Bash -lc "pacman --noconfirm -S mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-make make" 2>&1 | Out-Null
+
+            if (Test-Path $mingwBin) {
+                $env:Path = "$mingwBin;C:\msys64\usr\bin;$env:Path"
             }
         } elseif ($HasChoco) {
+            # Fallback: standalone MinGW via chocolatey
+            Info "Falling back to chocolatey MinGW..."
             choco install mingw -y | Out-Null
+            Refresh-Path
         }
+
         Refresh-Path
 
         # Re-check
@@ -91,8 +107,12 @@ if ($NeedCmake -or -not $Compiler) {
             $Compiler = "msvc"
         } else {
             Error "Could not find a C++ compiler after installation."
-            Error "Try installing MinGW manually: https://www.mingw-w64.org/"
-            Error "Or install Visual Studio Build Tools with C++ workload."
+            Error ""
+            Error "MSYS2 was installed but g++ is not in PATH."
+            Error "Open 'MSYS2 MinGW x64' from the Start menu and run:"
+            Error "  pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake make"
+            Error ""
+            Error "Then re-run this installer."
             exit 1
         }
     }
@@ -117,6 +137,19 @@ Info "Building adiboupk with $Compiler..."
 Push-Location $RepoDir
 
 $BuildLog = Join-Path $env:TEMP "adiboupk-build-$(Get-Random).log"
+
+# MinGW: ensure mingw32-make is available as 'make' for CMake
+if ($Compiler -eq "mingw") {
+    $mingw32make = Get-Command mingw32-make -ErrorAction SilentlyContinue
+    $hasMake = Get-Command make -ErrorAction SilentlyContinue
+    if ($mingw32make -and -not $hasMake) {
+        $makeDir = Split-Path $mingw32make.Source
+        $makeCopy = Join-Path $makeDir "make.exe"
+        if (-not (Test-Path $makeCopy)) {
+            Copy-Item $mingw32make.Source $makeCopy -ErrorAction SilentlyContinue
+        }
+    }
+}
 
 try {
     $cmakeArgs = @("-B", "build", "-DCMAKE_BUILD_TYPE=Release", "-DBUILD_TESTS=OFF")
