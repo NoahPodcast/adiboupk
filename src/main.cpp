@@ -14,6 +14,10 @@
 #include <iostream>
 #include <set>
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 namespace fs = std::filesystem;
 
 static fs::path resolve_root(const adiboupk::cli::ParsedArgs& args) {
@@ -631,10 +635,21 @@ static int cmd_uninstall(const adiboupk::cli::ParsedArgs& args) {
         std::cout << std::endl;
     }
 
-    // Step 2: Remove the binary itself
+    // Step 2: Locate the binary
+    fs::path self_path;
     std::error_code ec;
-    auto self_path = fs::read_symlink("/proc/self/exe", ec);
+
+#ifdef _WIN32
+    // Windows: GetModuleFileNameW
+    wchar_t buf[MAX_PATH];
+    if (GetModuleFileNameW(nullptr, buf, MAX_PATH) > 0) {
+        self_path = buf;
+    }
+#else
+    // Linux: /proc/self/exe
+    self_path = fs::read_symlink("/proc/self/exe", ec);
     if (self_path.empty()) {
+        // macOS / fallback: which
         std::string which_output;
         adiboupk::platform::run_process("which", {"adiboupk"}, true, &which_output);
         while (!which_output.empty() && (which_output.back() == '\n' || which_output.back() == '\r'))
@@ -643,6 +658,7 @@ static int cmd_uninstall(const adiboupk::cli::ParsedArgs& args) {
             self_path = which_output;
         }
     }
+#endif
 
     if (self_path.empty()) {
         std::cerr << "Could not locate adiboupk binary." << std::endl;
@@ -662,7 +678,75 @@ static int cmd_uninstall(const adiboupk::cli::ParsedArgs& args) {
         }
     }
 
-    // Try direct remove, fall back to sudo
+#ifdef _WIN32
+    // Windows: schedule deletion after process exits
+    // Can't delete a running exe, so use a cmd /c ping+del trick
+    auto parent_dir = self_path.parent_path();
+    std::string del_cmd = "cmd /c \"ping -n 2 127.0.0.1 >nul & del /f /q \""
+        + self_path.string() + "\" & rmdir /q \"" + parent_dir.string() + "\"\"";
+
+    // Remove from user PATH
+    std::cout << "Removing from PATH..." << std::endl;
+    int rc = adiboupk::platform::run_process("powershell", {
+        "-Command",
+        "$p = [Environment]::GetEnvironmentVariable('Path','User');"
+        "$p = ($p -split ';' | Where-Object { $_ -notlike '*adiboupk*' }) -join ';';"
+        "[Environment]::SetEnvironmentVariable('Path', $p, 'User')"
+    });
+
+    std::cout << "adiboupk will be removed after this process exits." << std::endl;
+    std::cout << std::endl;
+
+    // Ask about third-party tools installed by the install script
+    std::cout << "The install script may have installed these tools:" << std::endl;
+    std::cout << "  - MinGW-w64 (C:\\mingw64)" << std::endl;
+    std::cout << "  - 7-Zip" << std::endl;
+    std::cout << "  - MSYS2" << std::endl;
+    std::cout << "  - CMake" << std::endl;
+    std::cout << std::endl;
+
+    if (!args.force) {
+        std::cout << "Remove third-party build tools? [y/N] ";
+        std::cout.flush();
+        std::string answer;
+        std::getline(std::cin, answer);
+        if (!answer.empty() && (answer[0] == 'y' || answer[0] == 'Y')) {
+            // Remove standalone MinGW
+            if (fs::exists("C:\\mingw64")) {
+                std::cout << "  Removing C:\\mingw64..." << std::endl;
+                fs::remove_all("C:\\mingw64", ec);
+                // Clean from PATH
+                adiboupk::platform::run_process("powershell", {
+                    "-Command",
+                    "$p = [Environment]::GetEnvironmentVariable('Path','Machine');"
+                    "$p = ($p -split ';' | Where-Object { $_ -notlike '*mingw64*' }) -join ';';"
+                    "try { [Environment]::SetEnvironmentVariable('Path', $p, 'Machine') } catch {}"
+                });
+                adiboupk::platform::run_process("powershell", {
+                    "-Command",
+                    "$p = [Environment]::GetEnvironmentVariable('Path','User');"
+                    "$p = ($p -split ';' | Where-Object { $_ -notlike '*mingw64*' }) -join ';';"
+                    "[Environment]::SetEnvironmentVariable('Path', $p, 'User')"
+                });
+            }
+            // Uninstall MSYS2 via winget
+            adiboupk::platform::run_process("winget", {
+                "uninstall", "--id", "MSYS2.MSYS2", "--silent"
+            });
+            // Uninstall 7-Zip via winget
+            adiboupk::platform::run_process("winget", {
+                "uninstall", "--id", "7zip.7zip", "--silent"
+            });
+            // Don't uninstall CMake — user might need it for other projects
+            std::cout << "  Third-party tools removed." << std::endl;
+            std::cout << "  Note: CMake was kept (may be used by other projects)." << std::endl;
+        }
+    }
+
+    // Launch delayed deletion
+    system(del_cmd.c_str());
+#else
+    // Unix: try direct remove, fall back to sudo
     int rc = adiboupk::platform::run_process("rm", {self_path.string()});
     if (rc != 0) {
         rc = adiboupk::platform::run_process("sudo", {"rm", self_path.string()});
@@ -673,6 +757,7 @@ static int cmd_uninstall(const adiboupk::cli::ParsedArgs& args) {
         std::cerr << "  sudo rm " << self_path.string() << std::endl;
         return 1;
     }
+#endif
 
     std::cout << "adiboupk has been uninstalled." << std::endl;
     return 0;
