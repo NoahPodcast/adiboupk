@@ -1,3 +1,8 @@
+---
+hide:
+  - navigation
+---
+
 # Configuration
 
 adiboupk uses two configuration files: `adiboupk.json` (user-editable) and `adiboupk.lock` (auto-generated).

@@ -1,3 +1,8 @@
+---
+hide:
+  - navigation
+---
+
 # Commands
 
 Full reference for all adiboupk commands.

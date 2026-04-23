@@ -1,3 +1,8 @@
+---
+hide:
+  - navigation
+---
+
 # Installation
 
 adiboupk is a statically linked C++ binary. No runtime dependencies are needed (besides Python for your scripts).

@@ -1,3 +1,8 @@
+---
+hide:
+  - navigation
+---
+
 # Per-Package Isolation
 
 Per-package isolation mode resolves dependency conflicts **within a single group** — when two packages in the same `requirements.txt` have incompatible transitive dependencies.

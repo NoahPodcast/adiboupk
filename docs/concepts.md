@@ -1,3 +1,8 @@
+---
+hide:
+  - navigation
+---
+
 # Concepts
 
 This page explains the core concepts behind adiboupk.

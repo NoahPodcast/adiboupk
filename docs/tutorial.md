@@ -1,3 +1,8 @@
+---
+hide:
+  - navigation
+---
+
 # Tutorial
 
 This guide walks you through using adiboupk step by step, from the simplest project to the most advanced use case.
