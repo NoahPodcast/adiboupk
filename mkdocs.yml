@@ -7,22 +7,12 @@ repo_name: NoahPodcast/adiboupk
 theme:
   name: material
   language: en
-  custom_dir: docs/overrides
   logo: assets/logo.png
   favicon: assets/favicon.png
   palette:
     - scheme: slate
-      primary: custom
-      accent: custom
-      toggle:
-        icon: material/brightness-4
-        name: Light mode
-    - scheme: default
-      primary: custom
-      accent: custom
-      toggle:
-        icon: material/brightness-7
-        name: Dark mode
+      primary: black
+      accent: blue
   font:
     text: Inter
     code: JetBrains Mono
@@ -32,7 +22,6 @@ theme:
     - navigation.instant
     - navigation.tracking
     - navigation.sections
-    - navigation.expand
     - navigation.top
     - navigation.tabs
     - content.code.copy
@@ -74,7 +63,7 @@ nav:
   - Concepts: concepts.md
   - Configuration: configuration.md
   - Commands: commands.md
-  - Per-Package Isolation: isolation.md
+  - Isolation: isolation.md
   - Tutorial: tutorial.md
 
 extra:

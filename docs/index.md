@@ -1,49 +1,55 @@
-<div class="hero" markdown>
+<div class="hero">
 
-![adiboupk banner](assets/banner.png)
+<img src="assets/logo.png" alt="adiboupk" class="hero-logo">
 
-# adiboupk
+<h1>adiboupk</h1>
 
-**Python dependency isolation for multi-module projects.**
+<p class="hero-tagline">
+Python dependency isolation for multi-module projects.<br>
 Written in C++ for ~1ms startup overhead.
+</p>
 
 <div class="hero-buttons">
   <a href="installation/" class="btn-primary">Get Started</a>
-  <a href="https://github.com/NoahPodcast/adiboupk" class="btn-secondary">GitHub</a>
+  <a href="https://github.com/NoahPodcast/adiboupk" class="btn-secondary">View on GitHub</a>
+</div>
+
+<div class="hero-install">
+  <code>curl -sSL https://raw.githubusercontent.com/NoahPodcast/adiboupk/main/install.sh | bash</code>
 </div>
 
 </div>
 
-<div class="features" markdown>
+<div class="features">
 
-<div class="feature-card" markdown>
-### :material-folder-multiple: Group Isolation
-One venv per directory/module. Each group gets its own dependencies without conflicts.
+<div class="feature-card">
+<h3>:material-folder-multiple: Group Isolation</h3>
+<p>One venv per directory. Each module gets its own dependencies without conflicts.</p>
 </div>
 
-<div class="feature-card" markdown>
-### :material-package-variant-closed: Package Isolation
-Each package in its own directory for fine-grained control over dependency versions.
+<div class="feature-card">
+<h3>:material-package-variant-closed: Package Isolation</h3>
+<p>Fine-grained control — isolate individual packages when needed.</p>
 </div>
 
-<div class="feature-card" markdown>
-### :material-lightning-bolt: Native Performance
-Written in C++ — ~1ms startup overhead. No Python runtime needed for the CLI itself.
+<div class="feature-card">
+<h3>:material-lightning-bolt: Native Performance</h3>
+<p>C++ binary with ~1ms overhead. No Python runtime needed for the CLI.</p>
 </div>
 
-<div class="feature-card" markdown>
-### :material-shield-check: Dependency Audit
-Detect version conflicts across groups before they break your scripts.
+<div class="feature-card">
+<h3>:material-shield-check: Dependency Audit</h3>
+<p>Detect version conflicts across groups before they break production.</p>
 </div>
 
-<div class="feature-card" markdown>
-### :material-lock: Smart Lock File
-Reinstalls only when `requirements.txt` changes. No wasted time.
+<div class="feature-card">
+<h3>:material-lock: Smart Lock File</h3>
+<p>Reinstalls only when requirements.txt changes. No wasted time.</p>
 </div>
 
-<div class="feature-card" markdown>
-### :material-microsoft-windows: Cross-Platform
-Linux and Windows from the same codebase. Works everywhere.
+<div class="feature-card">
+<h3>:material-microsoft-windows: Cross-Platform</h3>
+<p>Linux and Windows from the same codebase.</p>
 </div>
 
 </div>
@@ -64,11 +70,11 @@ project/
 │   └── requirements.txt    ← requests==2.32.5
 ```
 
-:material-arrow-right: `script1.py` expects `requests 2.28.0` but gets `2.32.5` (or vice versa).
+`script1.py` expects `requests 2.28.0` but gets `2.32.5` (or vice versa).
 
 ## The Solution
 
-**adiboupk** creates an **isolated venv per group** of scripts and transparently routes each execution to the correct environment.
+**adiboupk** creates an isolated venv per group of scripts and transparently routes each execution to the correct environment.
 
 ```mermaid
 graph LR
@@ -82,27 +88,25 @@ graph LR
 ## Quick Start
 
 ```bash
-# 1. Install
+# Install
 curl -sSL https://raw.githubusercontent.com/NoahPodcast/adiboupk/main/install.sh | bash
 
-# 2. Initialize the project
+# Initialize & run
 cd my-project/
 adiboupk setup
-
-# 3. Run a script
 adiboupk run ./Enrichments/cortex_lookup.py hostname123
 ```
 
-That's it. Each script automatically uses the correct dependencies.
+Each script automatically uses the correct dependencies.
 
 ## Integration
 
-Simply replace `python` with `adiboupk run` in your orchestration scripts:
+Replace `python` with `adiboupk run` in your orchestration scripts:
 
 ```javascript
 // Before — global python, version conflicts
 var cmd = 'python ./Enrichments/cortex_lookup.py ' + hostname;
 
-// After — isolated venv per group
+// After — isolated per group
 var cmd = 'adiboupk run ./Enrichments/cortex_lookup.py ' + hostname;
 ```
