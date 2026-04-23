@@ -1,3 +1,9 @@
+---
+hide:
+  - navigation
+  - toc
+---
+
 <div class="hero">
 
 <img src="assets/logo.png" alt="adiboupk" class="hero-logo">
