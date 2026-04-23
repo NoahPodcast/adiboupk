@@ -1,0 +1,227 @@
+/* ===== adiboupk custom theme ===== */
+/* Palette: dark navy #0a1628, red #e53935, blue #1e88e5, yellow #fdd835 */
+
+/* --- Root variables --- */
+:root {
+  --md-primary-fg-color: #b71c1c;
+  --md-primary-fg-color--light: #e53935;
+  --md-primary-fg-color--dark: #7f0000;
+  --md-accent-fg-color: #1e88e5;
+  --md-default-bg-color: #0a1628;
+  --md-default-fg-color: #e0e0e0;
+}
+
+[data-md-color-scheme="slate"] {
+  --md-default-bg-color: #0a1628;
+  --md-default-bg-color--light: #0f1f38;
+  --md-default-bg-color--lighter: #142848;
+  --md-default-fg-color: #e0e0e0;
+  --md-default-fg-color--light: #b0b0b0;
+  --md-primary-fg-color: #b71c1c;
+  --md-primary-fg-color--light: #e53935;
+  --md-primary-fg-color--dark: #7f0000;
+  --md-accent-fg-color: #1e88e5;
+  --md-typeset-a-color: #42a5f5;
+  --md-code-bg-color: #0d1b2a;
+  --md-code-fg-color: #e0e0e0;
+  --md-footer-bg-color: #060e1a;
+  --md-footer-bg-color--dark: #040a12;
+}
+
+/* --- Header --- */
+.md-header {
+  background: linear-gradient(135deg, #0a1628 0%, #142848 100%);
+  border-bottom: 2px solid #e53935;
+}
+
+.md-header__title {
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+/* --- Navigation sidebar --- */
+.md-sidebar {
+  background: #0d1b2a;
+}
+
+.md-nav__link:hover,
+.md-nav__link--active {
+  color: #e53935 !important;
+}
+
+.md-nav__item--active > .md-nav__link {
+  color: #e53935 !important;
+  font-weight: 600;
+}
+
+/* --- Hero section (home page) --- */
+.hero {
+  text-align: center;
+  padding: 2rem 1rem 3rem;
+  margin: -0.6rem -0.6rem 2rem;
+  background: linear-gradient(180deg, #0a1628 0%, #142848 60%, #0a1628 100%);
+  border-bottom: 3px solid #e53935;
+}
+
+.hero img {
+  max-width: 600px;
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.hero h1 {
+  font-size: 2.4rem;
+  font-weight: 800;
+  margin: 0.5rem 0;
+  background: linear-gradient(90deg, #e53935, #ff6f60);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero p {
+  font-size: 1.2rem;
+  color: #90a4ae;
+  max-width: 600px;
+  margin: 0.5rem auto 1.5rem;
+}
+
+.hero .hero-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.hero .hero-buttons a {
+  display: inline-block;
+  padding: 0.75rem 2rem;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 1rem;
+  text-decoration: none;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.hero .hero-buttons a:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.hero .hero-buttons .btn-primary {
+  background: linear-gradient(135deg, #e53935, #b71c1c);
+  color: #fff;
+}
+
+.hero .hero-buttons .btn-secondary {
+  background: linear-gradient(135deg, #1e88e5, #1565c0);
+  color: #fff;
+}
+
+/* --- Feature cards --- */
+.features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.feature-card {
+  background: linear-gradient(135deg, #0f1f38, #142848);
+  border: 1px solid #1e3a5f;
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.feature-card:hover {
+  border-color: #e53935;
+  transform: translateY(-3px);
+}
+
+.feature-card h3 {
+  color: #e53935;
+  margin-top: 0;
+  font-size: 1.1rem;
+}
+
+.feature-card p {
+  color: #90a4ae;
+  margin-bottom: 0;
+  font-size: 0.95rem;
+}
+
+/* --- Code blocks --- */
+.md-typeset code {
+  background: #0d1b2a;
+  border: 1px solid #1e3a5f;
+  color: #42a5f5;
+}
+
+.md-typeset pre {
+  border: 1px solid #1e3a5f;
+  border-radius: 8px;
+}
+
+.md-typeset pre > code {
+  border: none;
+  color: #e0e0e0;
+}
+
+/* --- Admonitions --- */
+.md-typeset .admonition,
+.md-typeset details {
+  border-radius: 8px;
+  border-left-width: 4px;
+}
+
+/* --- Tables --- */
+.md-typeset table:not([class]) {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.md-typeset table:not([class]) th {
+  background: #142848;
+  color: #e53935;
+  font-weight: 700;
+}
+
+.md-typeset table:not([class]) td {
+  border-color: #1e3a5f;
+}
+
+/* --- Footer --- */
+.md-footer {
+  border-top: 2px solid #e53935;
+}
+
+/* --- Scrollbar --- */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0a1628;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1e3a5f;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #e53935;
+}
+
+/* --- Mobile --- */
+@media (max-width: 768px) {
+  .hero h1 {
+    font-size: 1.8rem;
+  }
+  .hero p {
+    font-size: 1rem;
+  }
+}

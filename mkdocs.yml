@@ -1,27 +1,28 @@
 site_name: adiboupk
 site_description: Python dependency isolation for multi-module projects
-site_url: https://noahpodcast.github.io/adiboupk/
+site_url: https://adiboupk.org/adiboupk/
 repo_url: https://github.com/NoahPodcast/adiboupk
 repo_name: NoahPodcast/adiboupk
 
 theme:
   name: material
   language: en
+  custom_dir: docs/overrides
+  logo: assets/logo.png
+  favicon: assets/favicon.png
   palette:
-    - media: "(prefers-color-scheme: light)"
-      scheme: default
-      primary: deep purple
-      accent: amber
-      toggle:
-        icon: material/brightness-7
-        name: Dark mode
-    - media: "(prefers-color-scheme: dark)"
-      scheme: slate
-      primary: deep purple
-      accent: amber
+    - scheme: slate
+      primary: custom
+      accent: custom
       toggle:
         icon: material/brightness-4
         name: Light mode
+    - scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-7
+        name: Dark mode
   font:
     text: Inter
     code: JetBrains Mono
@@ -33,11 +34,15 @@ theme:
     - navigation.sections
     - navigation.expand
     - navigation.top
+    - navigation.tabs
     - content.code.copy
     - content.code.annotate
     - toc.follow
     - search.suggest
     - search.highlight
+
+extra_css:
+  - assets/extra.css
 
 markdown_extensions:
   - admonition

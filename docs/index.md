@@ -1,6 +1,52 @@
+<div class="hero" markdown>
+
+![adiboupk banner](assets/banner.png)
+
 # adiboupk
 
-**Python dependency isolation for multi-module projects.** Written in C++ for ~1ms startup overhead.
+**Python dependency isolation for multi-module projects.**
+Written in C++ for ~1ms startup overhead.
+
+<div class="hero-buttons">
+  <a href="installation/" class="btn-primary">Get Started</a>
+  <a href="https://github.com/NoahPodcast/adiboupk" class="btn-secondary">GitHub</a>
+</div>
+
+</div>
+
+<div class="features" markdown>
+
+<div class="feature-card" markdown>
+### :material-folder-multiple: Group Isolation
+One venv per directory/module. Each group gets its own dependencies without conflicts.
+</div>
+
+<div class="feature-card" markdown>
+### :material-package-variant-closed: Package Isolation
+Each package in its own directory for fine-grained control over dependency versions.
+</div>
+
+<div class="feature-card" markdown>
+### :material-lightning-bolt: Native Performance
+Written in C++ — ~1ms startup overhead. No Python runtime needed for the CLI itself.
+</div>
+
+<div class="feature-card" markdown>
+### :material-shield-check: Dependency Audit
+Detect version conflicts across groups before they break your scripts.
+</div>
+
+<div class="feature-card" markdown>
+### :material-lock: Smart Lock File
+Reinstalls only when `requirements.txt` changes. No wasted time.
+</div>
+
+<div class="feature-card" markdown>
+### :material-microsoft-windows: Cross-Platform
+Linux and Windows from the same codebase. Works everywhere.
+</div>
+
+</div>
 
 ---
 
@@ -48,18 +94,6 @@ adiboupk run ./Enrichments/cortex_lookup.py hostname123
 ```
 
 That's it. Each script automatically uses the correct dependencies.
-
-## Features
-
-| Feature | Description |
-|---|---|
-| :material-folder-multiple: **Group isolation** | One venv per directory/module |
-| :material-package-variant-closed: **Package isolation** | Each package in its own directory |
-| :material-lock: **Lock file** | Reinstall only when `requirements.txt` changes |
-| :material-shield-check: **Audit** | Detect conflicts across groups |
-| :material-update: **Self-update** | `adiboupk upgrade` to update itself |
-| :material-microsoft-windows: **Cross-platform** | Linux and Windows from the same codebase |
-| :material-lightning-bolt: **Fast** | Native C++ binary, ~1ms overhead |
 
 ## Integration
 
