@@ -8,12 +8,8 @@ hide:
 
 <img src="assets/logo.png" alt="adiboupk" class="hero-logo">
 
-<h1>adiboupk</h1>
-
-<p class="hero-tagline">
-Python dependency isolation for multi-module projects.<br>
-Written in C++ for ~1ms startup overhead.
-</p>
+<p class="hero-tagline">Python dependency isolation<br>for multi-module projects.</p>
+<p class="hero-sub">Written in C++ · ~1ms overhead · Zero conflicts</p>
 
 <div class="hero-buttons">
   <a href="installation/" class="btn-primary">Get Started</a>
