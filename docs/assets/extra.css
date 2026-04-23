@@ -133,19 +133,58 @@
 }
 
 /* --- Install block --- */
-.hero-install {
+.install-block {
   margin-top: 2.5rem;
+  max-width: 620px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-.hero-install code {
-  display: inline-block;
+.install-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #555;
+  margin-bottom: 0.6rem;
+}
+
+.install-cmd {
+  display: flex;
+  align-items: center;
   background: #0a0a0a;
-  border: 1px solid #222;
-  border-radius: 4px;
-  padding: 0.6rem 1.2rem;
+  border: 1px solid #d63031;
+  border-radius: 6px;
+  padding: 0.8rem 1rem;
+  gap: 0.75rem;
+}
+
+.install-cmd code {
+  flex: 1;
+  background: none !important;
+  border: none !important;
+  color: #e0e0e0 !important;
   font-size: 0.82rem;
-  color: #aaa;
   font-family: 'JetBrains Mono', monospace;
+  padding: 0 !important;
+  white-space: nowrap;
+  overflow-x: auto;
+}
+
+.install-copy {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  color: #888;
+  cursor: pointer;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.8rem;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.install-copy:hover {
+  border-color: #d63031;
+  color: #d63031;
 }
 
 /* --- Feature cards --- */
@@ -182,27 +221,47 @@
   line-height: 1.6;
 }
 
-/* --- Code blocks --- */
+/* --- Inline code --- */
 .md-typeset code {
-  background: #0a0a0a;
-  border: 1px solid #1e1e1e;
-  color: #d63031;
+  background: rgba(214, 48, 49, 0.08);
+  border: none;
+  color: #e74c3c;
   font-size: 0.82em;
-  padding: 0.1em 0.35em;
-  border-radius: 3px;
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  font-weight: 500;
 }
 
+/* --- Code blocks --- */
 .md-typeset pre {
-  border: 1px solid #1e1e1e;
-  border-radius: 6px;
   background: #0a0a0a;
+  border: 1px solid #1a1a1a;
+  border-left: 3px solid #d63031;
+  border-radius: 0 6px 6px 0;
+  position: relative;
+  margin: 1.5em 0;
 }
 
 .md-typeset pre > code {
   border: none;
-  color: #ccc;
+  color: #c9d1d9;
   background: transparent;
   padding: 0;
+  font-weight: 400;
+}
+
+/* Copy button in code blocks */
+.md-typeset .md-clipboard {
+  color: #444;
+}
+
+.md-typeset .md-clipboard:hover {
+  color: #d63031;
+}
+
+/* Code block line numbers */
+.md-typeset .highlight .linenodiv {
+  color: #333;
 }
 
 /* --- Admonitions --- */

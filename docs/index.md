@@ -16,8 +16,14 @@ hide:
   <a href="https://github.com/NoahPodcast/adiboupk" class="btn-secondary">View on GitHub</a>
 </div>
 
-<div class="hero-install">
-  <code>curl -sSL https://raw.githubusercontent.com/NoahPodcast/adiboupk/main/install.sh | bash</code>
+<div class="install-block">
+  <div class="install-label">Install with one command</div>
+  <div class="install-cmd">
+    <code>curl -sSL https://raw.githubusercontent.com/NoahPodcast/adiboupk/main/install.sh | bash</code>
+    <button class="install-copy" onclick="navigator.clipboard.writeText('curl -sSL https://raw.githubusercontent.com/NoahPodcast/adiboupk/main/install.sh | bash')">
+      <span class="install-copy-icon">:material-content-copy:</span>
+    </button>
+  </div>
 </div>
 
 </div>
