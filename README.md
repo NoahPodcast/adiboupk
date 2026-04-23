@@ -16,7 +16,7 @@ Documentation for the [adiboupk](https://github.com/NoahPodcast/adiboupk) projec
 
 ## Deploy on Ubuntu Server
 
-The setup script creates a dedicated system user, installs Docker, and starts MkDocs behind a Cloudflare Tunnel.
+The setup script creates a dedicated system user, installs Docker, and starts MkDocs behind a Cloudflare Tunnel. A cron job checks for updates every 5 minutes.
 
 ### Prerequisites
 
@@ -36,6 +36,7 @@ This will:
 - Install Docker if not already present
 - Start MkDocs on `127.0.0.1:8000` (not exposed publicly)
 - Start a Cloudflare Tunnel container to expose the site on your domain
+- Install a cron job that pulls and rebuilds every 5 minutes if changes are detected
 
 ### Options
 
@@ -60,9 +61,11 @@ sudo -u adiboupk docker compose restart
 # Stop
 sudo -u adiboupk docker compose down
 
-# Update docs and restart
-sudo -u adiboupk git pull
-sudo -u adiboupk docker compose up -d --build
+# Auto-update logs
+tail -f /var/log/adiboupk-docs-update.log
+
+# Force manual update
+sudo -u adiboupk ./update.sh
 ```
 
 ## Local development

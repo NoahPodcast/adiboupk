@@ -92,11 +92,25 @@ info "Starting services..."
 cd "$INSTALL_DIR"
 sudo -u "$APP_USER" docker compose up -d --build
 
+# --- Install auto-update cron (every 5 minutes) ---
+CRON_CMD="cd $INSTALL_DIR && ./update.sh"
+CRON_LINE="*/5 * * * * $CRON_CMD"
+if ! crontab -u "$APP_USER" -l 2>/dev/null | grep -qF "$CRON_CMD"; then
+    info "Installing auto-update cron job..."
+    (crontab -u "$APP_USER" -l 2>/dev/null || true; echo "$CRON_LINE") | crontab -u "$APP_USER" -
+fi
+
+# --- Create log file ---
+touch /var/log/adiboupk-docs-update.log
+chown "$APP_USER:$APP_USER" /var/log/adiboupk-docs-update.log
+
 info "Done."
 info "MkDocs is running on port $PORT (localhost only)."
 info "Cloudflare Tunnel is exposing it to your configured domain."
+info "Auto-update checks GitHub every 5 minutes."
 info ""
 info "Manage with:"
 info "  cd $INSTALL_DIR && sudo -u $APP_USER docker compose logs -f"
 info "  cd $INSTALL_DIR && sudo -u $APP_USER docker compose restart"
 info "  cd $INSTALL_DIR && sudo -u $APP_USER docker compose down"
+info "  tail -f /var/log/adiboupk-docs-update.log"
