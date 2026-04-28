@@ -305,21 +305,60 @@
 }
 
 /* Tabbed code blocks */
+.md-typeset .tabbed-set {
+  border: none;
+  margin: 1.5em 0;
+}
+
 .md-typeset .tabbed-labels {
-  border-bottom: 1px solid #2a2a2a;
+  border-bottom: 2px solid #222;
+  background: #1a1a1a;
+  border-radius: 10px 10px 0 0;
+  padding: 0 0.5rem;
+  gap: 0;
 }
 
 .md-typeset .tabbed-labels > label {
-  color: #888;
+  color: #666;
+  font-size: 0.82rem;
+  font-weight: 500;
+  padding: 0.7rem 1.2rem;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: color 0.15s, border-color 0.15s;
 }
 
 .md-typeset .tabbed-labels > label:hover {
-  color: #e0e0e0;
+  color: #ccc;
 }
 
 .md-typeset .tabbed-set > input:checked + label {
   color: #f0f0f0;
-  border-color: #d63031;
+  border-bottom-color: #d63031;
+  background: transparent;
+}
+
+.md-typeset .tabbed-content {
+  border: none;
+  background: #1a1a1a;
+  border-radius: 0 0 10px 10px;
+  padding: 0;
+}
+
+.md-typeset .tabbed-content > .tabbed-block {
+  margin: 0;
+  padding: 0.5rem 0;
+}
+
+.md-typeset .tabbed-content pre {
+  margin: 0;
+  border-radius: 0 0 10px 10px;
+  border: none;
+  box-shadow: none;
+}
+
+.md-typeset .tabbed-content > .tabbed-block > pre:only-child {
+  border-radius: 0 0 10px 10px;
 }
 
 /* --- Admonitions --- */
