@@ -20,44 +20,62 @@ hide:
   <div class="install-label">Install with one command</div>
   <div class="install-cmd">
     <code>curl -sSL https://raw.githubusercontent.com/NoahPodcast/adiboupk/main/install.sh | bash</code>
-    <button class="install-copy" onclick="navigator.clipboard.writeText('curl -sSL https://raw.githubusercontent.com/NoahPodcast/adiboupk/main/install.sh | bash')">
-      <span class="install-copy-icon">:material-content-copy:</span>
+    <button class="install-copy" onclick="navigator.clipboard.writeText('curl -sSL https://raw.githubusercontent.com/NoahPodcast/adiboupk/main/install.sh | bash')" title="Copy">
+      &#x2398;
     </button>
   </div>
 </div>
 
 </div>
 
-<div class="features">
+<div class="features" markdown>
 
-<div class="feature-card">
-<h3>:material-folder-multiple: Group Isolation</h3>
-<p>One venv per directory. Each module gets its own dependencies without conflicts.</p>
+<div class="feature-card" markdown>
+
+### :material-folder-multiple: Group Isolation
+
+One venv per directory. Each module gets its own dependencies without conflicts.
+
 </div>
 
-<div class="feature-card">
-<h3>:material-package-variant-closed: Package Isolation</h3>
-<p>Fine-grained control — isolate individual packages when needed.</p>
+<div class="feature-card" markdown>
+
+### :material-package-variant-closed: Package Isolation
+
+Fine-grained control — isolate individual packages when needed.
+
 </div>
 
-<div class="feature-card">
-<h3>:material-lightning-bolt: Native Performance</h3>
-<p>C++ binary with ~1ms overhead. No Python runtime needed for the CLI.</p>
+<div class="feature-card" markdown>
+
+### :material-lightning-bolt: Native Performance
+
+C++ binary with ~1ms overhead. No Python runtime needed for the CLI.
+
 </div>
 
-<div class="feature-card">
-<h3>:material-shield-check: Dependency Audit</h3>
-<p>Detect version conflicts across groups before they break production.</p>
+<div class="feature-card" markdown>
+
+### :material-shield-check: Dependency Audit
+
+Detect version conflicts across groups before they break production.
+
 </div>
 
-<div class="feature-card">
-<h3>:material-lock: Smart Lock File</h3>
-<p>Reinstalls only when requirements.txt changes. No wasted time.</p>
+<div class="feature-card" markdown>
+
+### :material-lock: Smart Lock File
+
+Reinstalls only when requirements.txt changes. No wasted time.
+
 </div>
 
-<div class="feature-card">
-<h3>:material-microsoft-windows: Cross-Platform</h3>
-<p>Linux and Windows from the same codebase.</p>
+<div class="feature-card" markdown>
+
+### :material-microsoft-windows: Cross-Platform
+
+Linux and Windows from the same codebase.
+
 </div>
 
 </div>
