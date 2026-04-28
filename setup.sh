@@ -8,6 +8,8 @@
 #
 # Options:
 #   --tunnel-token TOKEN   Cloudflare Tunnel token (required)
+#   --cf-zone-id ID        Cloudflare Zone ID (for cache purge, optional)
+#   --cf-api-token TOKEN   Cloudflare API token with Cache Purge permission (optional)
 #   --user USER            System user to create (default: adiboupk)
 #   --install-dir DIR      Installation directory (default: /opt/adiboupk-docs)
 #   --port PORT            MkDocs port (default: 8000)
@@ -18,13 +20,17 @@ APP_USER="adiboupk"
 INSTALL_DIR="/opt/adiboupk-docs"
 PORT=8000
 TUNNEL_TOKEN=""
+CF_ZONE_ID=""
+CF_API_TOKEN=""
 
 info()  { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
 error() { printf '\033[1;31m==>\033[0m %s\n' "$*" >&2; exit 1; }
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --tunnel-token) TUNNEL_TOKEN="$2"; shift 2 ;;
+        --tunnel-token)  TUNNEL_TOKEN="$2"; shift 2 ;;
+        --cf-zone-id)   CF_ZONE_ID="$2"; shift 2 ;;
+        --cf-api-token) CF_API_TOKEN="$2"; shift 2 ;;
         --user)         APP_USER="$2"; shift 2 ;;
         --install-dir)  INSTALL_DIR="$2"; shift 2 ;;
         --port)         PORT="$2"; shift 2 ;;
@@ -83,6 +89,8 @@ info "Writing tunnel configuration..."
 cat > "$INSTALL_DIR/.env" <<ENVEOF
 CLOUDFLARE_TUNNEL_TOKEN=$TUNNEL_TOKEN
 MKDOCS_PORT=$PORT
+CF_ZONE_ID=$CF_ZONE_ID
+CF_API_TOKEN=$CF_API_TOKEN
 ENVEOF
 chown "$APP_USER:$APP_USER" "$INSTALL_DIR/.env"
 chmod 600 "$INSTALL_DIR/.env"
