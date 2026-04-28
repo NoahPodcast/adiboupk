@@ -223,23 +223,23 @@
 
 /* --- Inline code --- */
 .md-typeset code {
-  background: rgba(214, 48, 49, 0.08);
-  border: none;
-  color: #e74c3c;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  color: #e0e0e0;
   font-size: 0.82em;
   padding: 0.15em 0.4em;
   border-radius: 4px;
-  font-weight: 500;
+  font-weight: 400;
 }
 
 /* --- Code blocks --- */
 .md-typeset pre {
-  background: #0a0a0a;
-  border: 1px solid #1a1a1a;
-  border-left: 3px solid #d63031;
-  border-radius: 0 6px 6px 0;
+  background: #0d0d0d;
+  border: 1px solid #222;
+  border-radius: 8px;
   position: relative;
   margin: 1.5em 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .md-typeset pre > code {
@@ -248,6 +248,30 @@
   background: transparent;
   padding: 0;
   font-weight: 400;
+}
+
+/* Syntax highlighting colors */
+.md-typeset .highlight .c,
+.md-typeset .highlight .c1,
+.md-typeset .highlight .cm {
+  color: #555;
+}
+
+.md-typeset .highlight .k,
+.md-typeset .highlight .kn,
+.md-typeset .highlight .kd {
+  color: #d63031;
+}
+
+.md-typeset .highlight .s,
+.md-typeset .highlight .s1,
+.md-typeset .highlight .s2 {
+  color: #a8cc8c;
+}
+
+.md-typeset .highlight .nb,
+.md-typeset .highlight .nf {
+  color: #79b8ff;
 }
 
 /* Copy button in code blocks */
@@ -259,9 +283,19 @@
   color: #d63031;
 }
 
-/* Code block line numbers */
-.md-typeset .highlight .linenodiv {
-  color: #333;
+/* Tabbed code blocks */
+.md-typeset .tabbed-labels > label {
+  color: #888;
+  border-bottom-color: transparent;
+}
+
+.md-typeset .tabbed-labels > label--active,
+.md-typeset .tabbed-labels > label:hover {
+  color: #e0e0e0;
+}
+
+.md-typeset .tabbed-labels > .tabbed-labels__active {
+  border-bottom-color: #d63031;
 }
 
 /* --- Admonitions --- */
