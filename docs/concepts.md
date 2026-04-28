@@ -36,21 +36,21 @@ graph TB
 
 A **group** is a set of Python scripts that share the same dependencies. Each group has:
 
-- A **name** (e.g. `Enrichments`)
+- A **name** (e.g. `Analytics`)
 - A **directory** containing the scripts
 - A **requirements.txt** listing the dependencies
 - A **dedicated venv** in `.venvs/`
 
 ```mermaid
 graph LR
-    subgraph "Group Enrichments"
-        A[requirements.txt<br/>requests==2.28.0] --> V1[".venvs/Enrichments/"]
+    subgraph "Group Analytics"
+        A[requirements.txt<br/>requests==2.28.0] --> V1[".venvs/Analytics/"]
         S1[script1.py] -.-> V1
         S2[script2.py] -.-> V1
     end
 
-    subgraph "Group Responses"
-        B[requirements.txt<br/>requests==2.32.5] --> V2[".venvs/Responses/"]
+    subgraph "Group Notifications"
+        B[requirements.txt<br/>requests==2.32.5] --> V2[".venvs/Notifications/"]
         S3[script3.py] -.-> V2
     end
 ```
@@ -68,12 +68,12 @@ graph LR
 A directory can contain multiple `requirements-*.txt` files to create subgroups:
 
 ```
-Enrichments/
-├── requirements.txt          → group "Enrichments" (fallback)
-├── requirements-vt.txt       → subgroup "Enrichments/vt"
-├── requirements-cortex.txt   → subgroup "Enrichments/cortex"
-├── script_vt.py              → mapped to "Enrichments/vt"
-└── cortex_lookup.py          → mapped to "Enrichments/cortex"
+Analytics/
+├── requirements.txt          → group "Analytics" (fallback)
+├── requirements-vt.txt       → subgroup "Analytics/vt"
+├── requirements-data.txt   → subgroup "Analytics/data"
+├── script_vt.py              → mapped to "Analytics/vt"
+└── data_fetch.py          → mapped to "Analytics/data"
 ```
 
 Scripts are automatically associated with the subgroup whose suffix appears in their filename.
@@ -86,13 +86,13 @@ Each group gets its own Python venv in the `.venvs/` directory:
 
 ```
 .venvs/
-├── Enrichments/
+├── Analytics/
 │   ├── bin/python
 │   ├── lib/python3.x/site-packages/
 │   │   ├── requests/
 │   │   └── ...
 │   └── pyvenv.cfg
-└── Responses/
+└── Notifications/
     ├── bin/python
     └── lib/python3.x/site-packages/
         ├── requests/
@@ -124,11 +124,11 @@ The `adiboupk.lock` file stores the **SHA-256 hash** of each `requirements.txt` 
 ```json
 {
   "groups": {
-    "Enrichments": {
+    "Analytics": {
       "requirements_hash": "a1b2c3d4e5f6...",
       "installed": true
     },
-    "Responses": {
+    "Notifications": {
       "requirements_hash": "f6e5d4c3b2a1...",
       "installed": true
     }

@@ -88,10 +88,10 @@ When a project contains multiple Python modules each with their own `requirement
 
 ```
 project/
-├── Enrichments/
+├── Analytics/
 │   ├── script1.py
 │   └── requirements.txt    ← requests==2.28.0
-├── Responses/
+├── Notifications/
 │   ├── script2.py
 │   └── requirements.txt    ← requests==2.32.5
 ```
@@ -105,8 +105,8 @@ project/
 ```mermaid
 graph LR
     A[adiboupk run script1.py] --> B{Which group?}
-    B -->|Enrichments| C[".venvs/Enrichments/"]
-    B -->|Responses| D[".venvs/Responses/"]
+    B -->|Analytics| C[".venvs/Analytics/"]
+    B -->|Notifications| D[".venvs/Notifications/"]
     C --> E["python script1.py<br/>requests==2.28.0"]
     D --> F["python script2.py<br/>requests==2.32.5"]
 ```
@@ -120,7 +120,7 @@ curl -sSL https://raw.githubusercontent.com/NoahPodcast/adiboupk/main/install.sh
 # Initialize & run
 cd my-project/
 adiboupk setup
-adiboupk run ./Enrichments/cortex_lookup.py hostname123
+adiboupk run ./Analytics/data_fetch.py hostname123
 ```
 
 Each script automatically uses the correct dependencies.
@@ -131,8 +131,8 @@ Replace `python` with `adiboupk run` in your orchestration scripts:
 
 ```javascript
 // Before — global python, version conflicts
-var cmd = 'python ./Enrichments/cortex_lookup.py ' + hostname;
+var cmd = 'python ./Analytics/data_fetch.py ' + hostname;
 
 // After — isolated per group
-var cmd = 'adiboupk run ./Enrichments/cortex_lookup.py ' + hostname;
+var cmd = 'adiboupk run ./Analytics/data_fetch.py ' + hostname;
 ```

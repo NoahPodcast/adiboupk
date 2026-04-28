@@ -119,7 +119,7 @@ adiboupk run <script.py> [args...]
 
 ```bash
 # Examples
-adiboupk run ./Enrichments/cortex_lookup.py hostname123
+adiboupk run ./Analytics/data_fetch.py hostname123
 adiboupk run ./scripts/process.py --input data.csv --output result.json
 ```
 
@@ -148,12 +148,12 @@ Example output:
 ```
 ==> Cross-group conflicts (requirements.txt)...
   requests:
-    Enrichments: ==2.28.0
-    Responses:   ==2.32.5
+    Analytics: ==2.28.0
+    Notifications:   ==2.32.5
 
 ==> Transitive dependency conflicts (sub-dependencies)...
-  Enrichments: No broken requirements found.
-  Responses: No broken requirements found.
+  Analytics: No broken requirements found.
+  Notifications: No broken requirements found.
 ```
 
 ---
@@ -170,17 +170,17 @@ adiboupk status
 Project: /home/user/my-project
 Venvs:   /home/user/my-project/.venvs
 
-  Enrichments
-    Directory:    ./Enrichments
-    Requirements: ./Enrichments/requirements.txt
+  Analytics
+    Directory:    ./Analytics
+    Requirements: ./Analytics/requirements.txt
     Hash:         a1b2c3d4e5f6...
     Venv:         OK
     Status:       UP TO DATE
     Deps:         OK
 
-  Responses
-    Directory:    ./Responses
-    Requirements: ./Responses/requirements.txt
+  Notifications
+    Directory:    ./Notifications
+    Requirements: ./Notifications/requirements.txt
     Hash:         f6e5d4c3b2a1...
     Venv:         MISSING
     Status:       NEEDS INSTALL
@@ -203,8 +203,8 @@ adiboupk which <script.py>
 ```
 
 ```bash
-$ adiboupk which ./Enrichments/cortex_lookup.py
-/home/user/my-project/.venvs/Enrichments/bin/python (group: Enrichments)
+$ adiboupk which ./Analytics/data_fetch.py
+/home/user/my-project/.venvs/Analytics/bin/python (group: Analytics)
 ```
 
 ---

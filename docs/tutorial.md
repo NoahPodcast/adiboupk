@@ -17,12 +17,12 @@ You have a SOAR project with multiple modules, each with its own dependencies:
 
 ```
 soar-project/
-├── Enrichments/
-│   ├── cortex_lookup.py
+├── Analytics/
+│   ├── data_fetch.py
 │   ├── vt_scan.py
-│   └── requirements.txt      ← requests==2.28.0, cortex4py==2.0.1
-├── Responses/
-│   ├── send_email.py
+│   └── requirements.txt      ← requests==2.28.0, pandas==2.1.0
+├── Notifications/
+│   ├── send_alert.py
 │   ├── block_ip.py
 │   └── requirements.txt      ← requests==2.32.5, smtplib2==1.0
 └── Utilities/
@@ -40,17 +40,17 @@ adiboupk setup
 ```
 ==> Scanning /home/user/soar-project for module groups...
 Found 3 group(s):
-  - Enrichments (./Enrichments/requirements.txt)
-  - Responses (./Responses/requirements.txt)
+  - Analytics (./Analytics/requirements.txt)
+  - Notifications (./Notifications/requirements.txt)
   - Utilities (./Utilities/requirements.txt)
 Created adiboupk.json
 
 ==> Installing dependencies...
-  [install] Enrichments
+  [install] Analytics
     Creating venv...
     Installing dependencies...
     Done.
-  [install] Responses
+  [install] Notifications
     Creating venv...
     Installing dependencies...
     Done.
@@ -61,24 +61,24 @@ Created adiboupk.json
 
 ==> Auditing for cross-group conflicts...
   requests:
-    Enrichments: ==2.28.0
-    Responses:   ==2.32.5
+    Analytics: ==2.28.0
+    Notifications:   ==2.32.5
 
 Setup complete. Use 'adiboupk run <script.py>' to execute scripts.
 ```
 
 !!! note "Conflict detected"
-    The audit reports that `requests` has different versions between Enrichments and Responses.
+    The audit reports that `requests` has different versions between Analytics and Notifications.
     This is expected — it's exactly what adiboupk solves by isolating each group.
 
 ### Step 2 — Run scripts
 
 ```bash
-# Uses the Enrichments venv (requests==2.28.0)
-adiboupk run ./Enrichments/cortex_lookup.py hostname123
+# Uses the Analytics venv (requests==2.28.0)
+adiboupk run ./Analytics/data_fetch.py hostname123
 
-# Uses the Responses venv (requests==2.32.5)
-adiboupk run ./Responses/send_email.py alert@company.com
+# Uses the Notifications venv (requests==2.32.5)
+adiboupk run ./Notifications/send_alert.py user@example.com
 
 # Uses the Utilities venv (boto3)
 adiboupk run ./Utilities/cleanup.py --older-than 30d
@@ -94,32 +94,32 @@ adiboupk status
 Project: /home/user/soar-project
 Venvs:   /home/user/soar-project/.venvs
 
-  Enrichments
-    Directory:    ./Enrichments
-    Requirements: ./Enrichments/requirements.txt
+  Analytics
+    Directory:    ./Analytics
+    Requirements: ./Analytics/requirements.txt
     Hash:         a1b2c3d4e5f6...
     Venv:         OK
     Status:       UP TO DATE
     Deps:         OK
 
-  Responses
+  Notifications
     ...
 ```
 
 ### Step 4 — Update after a change
 
-You modify `Enrichments/requirements.txt` to add a package:
+You modify `Analytics/requirements.txt` to add a package:
 
 ```bash
-echo "shodan==1.31.0" >> Enrichments/requirements.txt
+echo "shodan==1.31.0" >> Analytics/requirements.txt
 adiboupk install
 ```
 
 ```
 Installing dependencies for 3 group(s)...
-  [skip] Responses (up to date)
+  [skip] Notifications (up to date)
   [skip] Utilities (up to date)
-  [install] Enrichments
+  [install] Analytics
     Installing dependencies...
     Done.
 All groups installed successfully.
@@ -224,12 +224,12 @@ Both packages coexist without conflict.
 A single directory contains scripts with different dependencies:
 
 ```
-Enrichments/
+Analytics/
 ├── requirements-vt.txt        ← vt-py==0.18.0
-├── requirements-cortex.txt    ← cortex4py==2.0.1
+├── requirements-data.txt    ← pandas==2.1.0
 ├── script_vt.py
 ├── script_vt_bulk.py
-└── cortex_lookup.py
+└── data_fetch.py
 ```
 
 ### Initialization
@@ -242,18 +242,18 @@ adiboupk automatically detects subgroups and maps scripts by naming convention:
 
 ```
 Found 2 group(s):
-  - Enrichments/cortex (./Enrichments/requirements-cortex.txt)
-  - Enrichments/vt (./Enrichments/requirements-vt.txt)
+  - Analytics/data (./Analytics/requirements-data.txt)
+  - Analytics/vt (./Analytics/requirements-vt.txt)
 ```
 
-Scripts containing `vt` in their name (`script_vt.py`, `script_vt_bulk.py`) are mapped to the `Enrichments/vt` subgroup. Those containing `cortex` (`cortex_lookup.py`) are mapped to `Enrichments/cortex`.
+Scripts containing `vt` in their name (`script_vt.py`, `script_vt_bulk.py`) are mapped to the `Analytics/vt` subgroup. Those containing `data` (`data_fetch.py`) are mapped to `Analytics/data`.
 
 ```bash
-# Uses the Enrichments/vt venv
-adiboupk run ./Enrichments/script_vt.py hash123
+# Uses the Analytics/vt venv
+adiboupk run ./Analytics/script_vt.py hash123
 
-# Uses the Enrichments/cortex venv
-adiboupk run ./Enrichments/cortex_lookup.py ip 1.2.3.4
+# Uses the Analytics/data venv
+adiboupk run ./Analytics/data_fetch.py ip 1.2.3.4
 ```
 
 ---
@@ -266,10 +266,10 @@ adiboupk run ./Enrichments/cortex_lookup.py ip 1.2.3.4
 const { execSync } = require('child_process');
 
 // Before — global python
-// const result = execSync('python ./Enrichments/cortex_lookup.py ' + hostname);
+// const result = execSync('python ./Analytics/data_fetch.py ' + hostname);
 
 // After — isolated per group
-const result = execSync('adiboupk run ./Enrichments/cortex_lookup.py ' + hostname);
+const result = execSync('adiboupk run ./Analytics/data_fetch.py ' + hostname);
 ```
 
 ### Bash / cron
@@ -277,10 +277,10 @@ const result = execSync('adiboupk run ./Enrichments/cortex_lookup.py ' + hostnam
 ```bash
 #!/bin/bash
 # Before
-# python3 ./Enrichments/cortex_lookup.py "$1"
+# python3 ./Analytics/data_fetch.py "$1"
 
 # After
-adiboupk run ./Enrichments/cortex_lookup.py "$1"
+adiboupk run ./Analytics/data_fetch.py "$1"
 ```
 
 ### Wrapper Scripts

@@ -22,10 +22,10 @@ Main configuration file, located at the project root. Created by `adiboupk init`
   "isolate_packages": true,
   "groups": [
     {
-      "name": "Enrichments",
-      "directory": "Enrichments",
-      "requirements": "Enrichments/requirements.txt",
-      "scripts": ["cortex_lookup.py", "vt_scan.py"]
+      "name": "Analytics",
+      "directory": "Analytics",
+      "requirements": "Analytics/requirements.txt",
+      "scripts": ["data_fetch.py", "api_scan.py"]
     }
   ]
 }
@@ -57,10 +57,10 @@ Main configuration file, located at the project root. Created by `adiboupk init`
 
 ```
 project/
-├── Enrichments/
+├── Analytics/
 │   ├── requirements.txt
 │   └── script.py
-├── Responses/
+├── Notifications/
 │   ├── requirements.txt
 │   └── script.py
 └── adiboupk.json
@@ -71,12 +71,12 @@ project/
   "venvs_dir": ".venvs",
   "groups": [
     {
-      "name": "Enrichments",
-      "directory": "Enrichments"
+      "name": "Analytics",
+      "directory": "Analytics"
     },
     {
-      "name": "Responses",
-      "directory": "Responses"
+      "name": "Notifications",
+      "directory": "Notifications"
     }
   ]
 }
@@ -89,11 +89,11 @@ project/
 
 ```
 project/
-├── Enrichments/
+├── Analytics/
 │   ├── requirements-vt.txt
-│   ├── requirements-cortex.txt
+│   ├── requirements-data.txt
 │   ├── script_vt.py
-│   └── cortex_lookup.py
+│   └── data_fetch.py
 └── adiboupk.json
 ```
 
@@ -102,16 +102,16 @@ project/
   "venvs_dir": ".venvs",
   "groups": [
     {
-      "name": "Enrichments/vt",
-      "directory": "Enrichments",
-      "requirements": "Enrichments/requirements-vt.txt",
+      "name": "Analytics/vt",
+      "directory": "Analytics",
+      "requirements": "Analytics/requirements-vt.txt",
       "scripts": ["script_vt.py"]
     },
     {
-      "name": "Enrichments/cortex",
-      "directory": "Enrichments",
-      "requirements": "Enrichments/requirements-cortex.txt",
-      "scripts": ["cortex_lookup.py"]
+      "name": "Analytics/data",
+      "directory": "Analytics",
+      "requirements": "Analytics/requirements-data.txt",
+      "scripts": ["data_fetch.py"]
     }
   ]
 }
@@ -178,11 +178,11 @@ Auto-generated file created by `adiboupk install`. **Do not edit manually.**
 ```json
 {
   "groups": {
-    "Enrichments": {
+    "Analytics": {
       "requirements_hash": "a1b2c3d4e5f6789...",
       "installed": true
     },
-    "Responses": {
+    "Notifications": {
       "requirements_hash": "9876f5e4d3c2b1a...",
       "installed": true
     }
