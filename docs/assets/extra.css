@@ -12,8 +12,8 @@
   --md-primary-fg-color--dark: #000000;
   --md-accent-fg-color: #d63031;
   --md-typeset-a-color: #d63031;
-  --md-code-bg-color: #0a0a0a;
-  --md-code-fg-color: #e0e0e0;
+  --md-code-bg-color: #1a1a1a;
+  --md-code-fg-color: #d4d4d4;
   --md-footer-bg-color: #0a0a0a;
   --md-footer-bg-color--dark: #050505;
 }
@@ -223,60 +223,81 @@
 
 /* --- Inline code --- */
 .md-typeset code {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
-  color: #e0e0e0;
+  background: #1e1e1e;
+  border: none;
+  color: #f0f0f0;
   font-size: 0.82em;
-  padding: 0.15em 0.4em;
+  padding: 0.2em 0.5em;
   border-radius: 4px;
   font-weight: 400;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
 }
 
 /* --- Code blocks --- */
 .md-typeset pre {
-  background: #0d0d0d;
-  border: 1px solid #222;
-  border-radius: 8px;
+  background: #1a1a1a;
+  border: none;
+  border-radius: 10px;
   position: relative;
   margin: 1.5em 0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  padding: 0;
 }
 
 .md-typeset pre > code {
   border: none;
-  color: #c9d1d9;
+  color: #d4d4d4;
   background: transparent;
-  padding: 0;
+  padding: 1em 1.2em;
   font-weight: 400;
+  font-size: 0.85em;
+  line-height: 1.7;
+  display: block;
 }
 
-/* Syntax highlighting colors */
+/* Syntax highlighting */
 .md-typeset .highlight .c,
 .md-typeset .highlight .c1,
-.md-typeset .highlight .cm {
-  color: #555;
+.md-typeset .highlight .cm,
+.md-typeset .highlight .ch {
+  color: #666;
+  font-style: italic;
 }
 
 .md-typeset .highlight .k,
 .md-typeset .highlight .kn,
-.md-typeset .highlight .kd {
-  color: #d63031;
+.md-typeset .highlight .kd,
+.md-typeset .highlight .kc {
+  color: #c792ea;
 }
 
 .md-typeset .highlight .s,
 .md-typeset .highlight .s1,
 .md-typeset .highlight .s2 {
-  color: #a8cc8c;
+  color: #c3e88d;
 }
 
 .md-typeset .highlight .nb,
-.md-typeset .highlight .nf {
-  color: #79b8ff;
+.md-typeset .highlight .nf,
+.md-typeset .highlight .nc {
+  color: #82aaff;
 }
 
-/* Copy button in code blocks */
+.md-typeset .highlight .mi,
+.md-typeset .highlight .mf {
+  color: #f78c6c;
+}
+
+.md-typeset .highlight .o,
+.md-typeset .highlight .p {
+  color: #89ddff;
+}
+
+/* Copy button */
 .md-typeset .md-clipboard {
-  color: #444;
+  color: #555;
+  top: 0.5em;
+  right: 0.5em;
 }
 
 .md-typeset .md-clipboard:hover {
@@ -284,18 +305,21 @@
 }
 
 /* Tabbed code blocks */
-.md-typeset .tabbed-labels > label {
-  color: #888;
-  border-bottom-color: transparent;
+.md-typeset .tabbed-labels {
+  border-bottom: 1px solid #2a2a2a;
 }
 
-.md-typeset .tabbed-labels > label--active,
+.md-typeset .tabbed-labels > label {
+  color: #888;
+}
+
 .md-typeset .tabbed-labels > label:hover {
   color: #e0e0e0;
 }
 
-.md-typeset .tabbed-labels > .tabbed-labels__active {
-  border-bottom-color: #d63031;
+.md-typeset .tabbed-set > input:checked + label {
+  color: #f0f0f0;
+  border-color: #d63031;
 }
 
 /* --- Admonitions --- */
